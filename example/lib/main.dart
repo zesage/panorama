@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:panorama/panorama.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() => runApp(MyApp());
 
@@ -24,13 +26,26 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  File _imageFile;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Panorama(),
+      body: Panorama(
+        animSpeed: 2.0,
+        child: _imageFile != null ? Image.file(_imageFile) : Image.asset('assets/panorama.jpg'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        mini: true,
+        onPressed: () async {
+          _imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
+          setState(() {});
+        },
+        child: Icon(Icons.panorama),
+      ),
     );
   }
 }

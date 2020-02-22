@@ -1,6 +1,6 @@
 name: panorama
-description: A new Flutter package project.
-version: 0.0.1
+description: Panorama -- A 360-degree panorama viewer.
+version: 0.0.2
 homepage: https://github.com/zesage/panorama
 
 environment:
@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_cube: ^0.0.3
 
 dev_dependencies:
   flutter_test:
