@@ -34,3 +34,8 @@ import 'package:panorama/panorama.dart';
 ## Screenshot
 
 ![screenshot](https://github.com/zesage/panorama/raw/master/resource/screenshot.gif)
+
+## Usage Tutorials
+
+* [Create a Panoramic Image Viewer in Flutter using the panorama plugin](https://developer.school/creating-a-panoramic-image-viewer-in-flutter-using-panorama-plugin/)
+* [Flutter Panorama Plugin](https://www.youtube.com/watch?v=JYSJOQ86spc)
