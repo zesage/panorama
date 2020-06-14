@@ -5,6 +5,12 @@ import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_cube/flutter_cube.dart';
+import 'package:motion_sensors/motion_sensors.dart';
+
+enum SensorControl {
+  None,
+  Orientation,
+}
 
 class Panorama extends StatefulWidget {
   Panorama({
@@ -24,6 +30,7 @@ class Panorama extends StatefulWidget {
     this.latSegments = 32,
     this.lonSegments = 64,
     this.interactive = true,
+    this.sensorControl = SensorControl.None,
     this.child,
   }) : super(key: key);
 
@@ -71,6 +78,9 @@ class Panorama extends StatefulWidget {
 
   /// Interact with the panorama. default to true
   final bool interactive;
+
+  /// Control the panorama with motion sensors.
+  final SensorControl sensorControl;
 
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image child;
@@ -147,6 +157,16 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     super.initState();
     latitude = widget.latitude;
     longitude = widget.longitude;
+
+    if (widget.sensorControl == SensorControl.Orientation) {
+      motionSensors.orientation.listen((OrientationEvent event) {
+        Quaternion q = Quaternion.euler(-event.roll, event.pitch, event.yaw);
+        q *= Quaternion.axisAngle(Vector3(1, 0, 0), math.pi * 0.5);
+        q.rotate(scene.camera.target..setFrom(Vector3(0, 0, -_radius)));
+        q.rotate(scene.camera.up..setFrom(Vector3(0, 1, 0)));
+        scene.update();
+      });
+    }
 
     _controller = AnimationController(duration: Duration(milliseconds: 60000), vsync: this)
       ..addListener(() {

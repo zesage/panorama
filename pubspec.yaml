@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_cube: ^0.0.3
+  motion_sensors: ^0.0.1
 
 dev_dependencies:
   flutter_test:

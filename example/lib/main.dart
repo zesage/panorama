@@ -35,7 +35,9 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Panorama(
-        animSpeed: 2.0,
+        animSpeed: 0,
+        interactive: false,
+        sensorControl: SensorControl.Orientation,
         child: _imageFile != null ? Image.file(_imageFile) : Image.asset('assets/panorama.jpg'),
       ),
       floatingActionButton: FloatingActionButton(
