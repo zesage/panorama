@@ -31,6 +31,7 @@ class Panorama extends StatefulWidget {
     this.lonSegments = 64,
     this.interactive = true,
     this.sensorControl = SensorControl.None,
+    this.onChangedCallback,
     this.child,
   }) : super(key: key);
 
@@ -82,6 +83,9 @@ class Panorama extends StatefulWidget {
   /// Control the panorama with motion sensors.
   final SensorControl sensorControl;
 
+  /// It is called when the view direction has changed, sending the new longitude and latitude values back.
+  final Function(double, double) onChangedCallback;
+
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image child;
 
@@ -124,6 +128,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       } else
         _controller.forward();
     }
+
+    widget.onChangedCallback(longitude, latitude);
   }
 
   void _onSceneCreated(Scene scene) {
