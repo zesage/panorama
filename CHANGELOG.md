@@ -1,3 +1,8 @@
-## [0.0.1] - TODO: Add release date.
+## [0.1.0] - 02/22/2020
 
-* TODO: Describe initial release.
+* Add sensor control.
+* Add onViewChanged event.
+
+## [0.0.2] - 02/22/2020
+
+* Initial release.

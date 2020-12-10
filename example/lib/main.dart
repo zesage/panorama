@@ -27,6 +27,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   File _imageFile;
+  double _lon = 0;
+  double _lat = 0;
+  double _tilt = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +37,22 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Panorama(
-        animSpeed: 0,
-        interactive: false,
-        sensorControl: SensorControl.Orientation,
-        child: _imageFile != null ? Image.file(_imageFile) : Image.asset('assets/panorama.jpg'),
+      body: Stack(
+        children: [
+          Panorama(
+            animSpeed: 1.0,
+            sensorControl: SensorControl.Orientation,
+            onViewChanged: (longitude, latitude, tilt) {
+              setState(() {
+                _lon = longitude;
+                _lat = latitude;
+                _tilt = tilt;
+              });
+            },
+            child: _imageFile != null ? Image.file(_imageFile) : Image.asset('assets/panorama.jpg'),
+          ),
+          Text('${_lon.toStringAsFixed(3)}, ${_lat.toStringAsFixed(3)}, ${_tilt.toStringAsFixed(3)}'),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         mini: true,
