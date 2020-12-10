@@ -8,8 +8,14 @@ import 'package:flutter_cube/flutter_cube.dart';
 import 'package:motion_sensors/motion_sensors.dart';
 
 enum SensorControl {
+  /// No sensor used.
   None,
+
+  /// Use gyroscope and accelerometer.
   Orientation,
+
+  /// Use magnetometer and accelerometer. The logitude 0 points to north.
+  AbsoluteOrientation,
 }
 
 class Panorama extends StatefulWidget {
@@ -25,20 +31,20 @@ class Panorama extends StatefulWidget {
     this.minZoom = 1.0,
     this.maxZoom = 5.0,
     this.sensitivity = 1.0,
-    this.animSpeed = 1.0,
+    this.animSpeed = 0.0,
     this.animReverse = true,
     this.latSegments = 32,
     this.lonSegments = 64,
     this.interactive = true,
     this.sensorControl = SensorControl.None,
-    this.onChangedCallback,
+    this.onViewChanged,
     this.child,
   }) : super(key: key);
 
-  /// The initial latitude, in degrees, between -90 and 90. default to 0
+  /// The initial latitude, in degrees, between -90 and 90. default to 0 (the vertical center of the image).
   final double latitude;
 
-  /// The initial longitude, in degrees, between -180 and 180. default to 0
+  /// The initial longitude, in degrees, between -180 and 180. default to 0 (the horizontal center of the image).
   final double longitude;
 
   /// The initial zoom, default to 1.0.
@@ -65,7 +71,7 @@ class Panorama extends StatefulWidget {
   /// The sensitivity of the gesture. default to 1.0
   final double sensitivity;
 
-  /// The Speed of rotation by animation. default to 1.0
+  /// The Speed of rotation by animation. default to 0.0
   final double animSpeed;
 
   /// Reverse rotation when the current longitude reaches the minimal or maximum. default to true
@@ -84,7 +90,7 @@ class Panorama extends StatefulWidget {
   final SensorControl sensorControl;
 
   /// It is called when the view direction has changed, sending the new longitude and latitude values back.
-  final Function(double, double) onChangedCallback;
+  final Function(double longitude, double latitude, double tilt) onViewChanged;
 
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image child;
@@ -106,6 +112,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   double _dampingFactor = 0.05;
   double _animateDirection = 1.0;
   AnimationController _controller;
+  double screenOrientation = 0.0;
+  Vector3 orientation = Vector3(0, radians(90), 0);
 
   void _handleScaleStart(ScaleStartDetails details) {
     _lastFocalPoint = details.localFocalPoint;
@@ -121,93 +129,129 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       _lastZoom = scene.camera.zoom;
     }
     zoomDelta += _lastZoom * details.scale - (scene.camera.zoom + zoomDelta);
-    if (!_controller.isAnimating) {
+    if (widget.sensorControl == SensorControl.None && !_controller.isAnimating) {
       _controller.reset();
       if (widget.animSpeed != 0) {
         _controller.repeat();
       } else
         _controller.forward();
     }
+  }
 
-    widget.onChangedCallback(longitude, latitude);
+  void _updateView() {
+    if (scene == null) return;
+    // auto rotate
+    longitudeDelta += 0.001 * widget.animSpeed;
+    // animate vertical rotating
+    latitude += latitudeDelta * _dampingFactor * widget.sensitivity;
+    latitudeDelta *= 1 - _dampingFactor * widget.sensitivity;
+    // animate horizontal rotating
+    longitude += _animateDirection * longitudeDelta * _dampingFactor * widget.sensitivity;
+    longitudeDelta *= 1 - _dampingFactor * widget.sensitivity;
+    // animate zomming
+    final double zoom = scene.camera.zoom + zoomDelta * _dampingFactor;
+    zoomDelta *= 1 - _dampingFactor;
+    scene.camera.zoom = zoom.clamp(widget.minZoom, widget.maxZoom);
+    // stop animation if not needed
+    if (latitudeDelta.abs() < 0.001 && longitudeDelta.abs() < 0.001 && zoomDelta.abs() < 0.001) {
+      if (widget.animSpeed == 0 && _controller.isAnimating) _controller.stop();
+    }
+
+    // rotate for screen orientation
+    Quaternion q = Quaternion.axisAngle(Vector3(0, 0, 1), screenOrientation);
+    // rotate for device orientation
+    q *= Quaternion.euler(-orientation.z, -orientation.y, -orientation.x);
+    // rotate to latitude zero
+    q *= Quaternion.axisAngle(Vector3(1, 0, 0), math.pi * 0.5);
+
+    // check and limit the rotation range
+    Vector3 o = quaternionToOrientation(q);
+    final double minLat = radians(math.max(-89.9, widget.minLatitude));
+    final double maxLat = radians(math.min(89.9, widget.maxLatitude));
+    final double minLon = radians(widget.minLongitude);
+    final double maxLon = radians(widget.maxLongitude);
+    final double lat = (-o.y).clamp(minLat, maxLat);
+    final double lon = o.x.clamp(minLon, maxLon);
+    if (lat + latitude < minLat) latitude = minLat - lat;
+    if (lat + latitude > maxLat) latitude = maxLat - lat;
+    if (maxLon - minLon < math.pi * 2) {
+      if (lon + longitude < minLon || lon + longitude > maxLon) {
+        longitude = (lon + longitude < minLon ? minLon : maxLon) - lon;
+        // reverse rotation when reaching the boundary
+        if (widget.animSpeed != 0) {
+          if (widget.animReverse)
+            _animateDirection *= -1.0;
+          else
+            _controller.stop();
+        }
+      }
+    }
+    o.x = lon;
+    o.y = -lat;
+    q = orientationToQuaternion(o);
+
+    // rotate to longitude zero
+    q *= Quaternion.axisAngle(Vector3(0, 1, 0), -math.pi * 0.5);
+    // rotate around the global Y axis
+    q *= Quaternion.axisAngle(Vector3(0, 1, 0), longitude);
+    // rotate around the local X axis
+    q = Quaternion.axisAngle(Vector3(1, 0, 0), -latitude) * q;
+
+    o = quaternionToOrientation(q * Quaternion.axisAngle(Vector3(0, 1, 0), math.pi * 0.5));
+    widget.onViewChanged?.call(degrees(o.x), degrees(-o.y), degrees(o.z));
+
+    q.rotate(scene.camera.target..setFrom(Vector3(0, 0, -_radius)));
+    q.rotate(scene.camera.up..setFrom(Vector3(0, 1, 0)));
+    scene.update();
   }
 
   void _onSceneCreated(Scene scene) {
     this.scene = scene;
-    scene.camera.near = 1.0;
-    scene.camera.far = _radius + 1.0;
-    scene.camera.fov = 75;
-    scene.camera.zoom = widget.zoom;
-    scene.camera.position.setFrom(Vector3(0, 0, 0.1));
-    setCameraTarget(latitude, longitude);
-
     if (widget.child != null) {
       loadImageFromProvider(widget.child.image).then((ui.Image image) {
         final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, texture: image);
         scene.world.add(Object(name: 'surface', mesh: mesh, backfaceCulling: false));
         scene.updateTexture();
+        scene.camera.near = 1.0;
+        scene.camera.far = _radius + 1.0;
+        scene.camera.fov = 75;
+        scene.camera.zoom = widget.zoom;
+        scene.camera.position.setFrom(Vector3(0, 0, 0.1));
+        _updateView();
       });
     }
-  }
-
-  void setCameraTarget(double latitude, double longitude) {
-    longitude += math.pi;
-    scene.camera.target.x = math.cos(longitude) * math.cos(latitude) * _radius;
-    scene.camera.target.y = math.sin(latitude) * _radius;
-    scene.camera.target.z = math.sin(longitude) * math.cos(latitude) * _radius;
-    scene.update();
   }
 
   @override
   void initState() {
     super.initState();
-    latitude = widget.latitude;
-    longitude = widget.longitude;
+    latitude = degrees(widget.latitude);
+    longitude = degrees(widget.longitude);
 
-    if (widget.sensorControl == SensorControl.Orientation) {
-      motionSensors.orientation.listen((OrientationEvent event) {
-        Quaternion q = Quaternion.euler(-event.roll, event.pitch, event.yaw);
-        q *= Quaternion.axisAngle(Vector3(1, 0, 0), math.pi * 0.5);
-        q.rotate(scene.camera.target..setFrom(Vector3(0, 0, -_radius)));
-        q.rotate(scene.camera.up..setFrom(Vector3(0, 1, 0)));
-        scene.update();
-      });
+    switch (widget.sensorControl) {
+      case SensorControl.Orientation:
+        motionSensors.orientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
+        motionSensors.orientation.listen((OrientationEvent event) {
+          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
+          _updateView();
+        });
+        break;
+      case SensorControl.AbsoluteOrientation:
+        motionSensors.absoluteOrientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
+        motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
+          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
+          _updateView();
+        });
+        break;
+      default:
     }
 
-    _controller = AnimationController(duration: Duration(milliseconds: 60000), vsync: this)
-      ..addListener(() {
-        if (scene == null) return;
-        longitudeDelta += 0.001 * widget.animSpeed;
-        if (latitudeDelta.abs() < 0.001 && longitudeDelta.abs() < 0.001 && zoomDelta.abs() < 0.001) {
-          if (widget.animSpeed == 0 && _controller.isAnimating) _controller.stop();
-          return;
-        }
-        // animate vertical rotating
-        latitude += latitudeDelta * _dampingFactor * widget.sensitivity;
-        latitudeDelta *= 1 - _dampingFactor * widget.sensitivity;
-        latitude = latitude.clamp(radians(math.max(-89, widget.minLatitude)), radians(math.min(89, widget.maxLatitude)));
-        // animate horizontal rotating
-        longitude += _animateDirection * longitudeDelta * _dampingFactor * widget.sensitivity;
-        longitudeDelta *= 1 - _dampingFactor * widget.sensitivity;
-        if (widget.maxLongitude - widget.minLongitude < 360) {
-          final double lon = longitude.clamp(radians(widget.minLongitude), radians(widget.maxLongitude));
-          if (longitude != lon) {
-            longitude = lon;
-            if (widget.animSpeed != 0) {
-              if (widget.animReverse) {
-                _animateDirection *= -1.0;
-              } else
-                _controller.stop();
-            }
-          }
-        }
-        // animate zomming
-        final double zoom = scene.camera.zoom + zoomDelta * _dampingFactor;
-        zoomDelta *= 1 - _dampingFactor;
-        scene.camera.zoom = zoom.clamp(widget.minZoom, widget.maxZoom);
-        setCameraTarget(latitude, longitude);
-      });
-    if (widget.animSpeed != 0) _controller.repeat();
+    motionSensors.screenOrientation.listen((ScreenOrientationEvent event) {
+      screenOrientation = radians(event.angle);
+    });
+
+    _controller = AnimationController(duration: Duration(milliseconds: 60000), vsync: this)..addListener(_updateView);
+    if (widget.sensorControl == SensorControl.None && widget.animSpeed != 0) _controller.repeat();
   }
 
   @override
@@ -289,4 +333,27 @@ Future<ui.Image> loadImageFromProvider(ImageProvider provider) async {
   });
   imageStream.addListener(listener);
   return completer.future;
+}
+
+Vector3 quaternionToOrientation(Quaternion q) {
+  // final Matrix4 m = Matrix4.compose(Vector3.zero(), q, Vector3.all(1.0));
+  // final Vector v = motionSensors.getOrientation(m);
+  // return Vector3(v.z, v.y, v.x);
+  final storage = q.storage;
+  final double x = storage[0];
+  final double y = storage[1];
+  final double z = storage[2];
+  final double w = storage[3];
+  final double roll = math.atan2(-2 * (x * y - w * z), 1.0 - 2 * (x * x + z * z));
+  final double pitch = math.asin(2 * (y * z + w * x));
+  final double yaw = math.atan2(-2 * (x * z - w * y), 1.0 - 2 * (x * x + y * y));
+  return Vector3(yaw, pitch, roll);
+}
+
+Quaternion orientationToQuaternion(Vector3 v) {
+  final Matrix4 m = Matrix4.identity();
+  m.rotateZ(v.z);
+  m.rotateX(v.y);
+  m.rotateY(v.x);
+  return Quaternion.fromRotation(m.getRotation());
 }
