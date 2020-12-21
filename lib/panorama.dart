@@ -114,6 +114,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   AnimationController _controller;
   double screenOrientation = 0.0;
   Vector3 orientation = Vector3(0, radians(90), 0);
+  StreamSubscription _orientationSubscription;
+  StreamSubscription _screenOrientSubscription;
 
   void _handleScaleStart(ScaleStartDetails details) {
     _lastFocalPoint = details.localFocalPoint;
@@ -231,14 +233,14 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     switch (widget.sensorControl) {
       case SensorControl.Orientation:
         motionSensors.orientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
-        motionSensors.orientation.listen((OrientationEvent event) {
+        _orientationSubscription = motionSensors.orientation.listen((OrientationEvent event) {
           orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
           _updateView();
         });
         break;
       case SensorControl.AbsoluteOrientation:
         motionSensors.absoluteOrientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
-        motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
+        _orientationSubscription = motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
           orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
           _updateView();
         });
@@ -256,6 +258,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    _orientationSubscription?.cancel();
+    _screenOrientSubscription?.cancel();
     _controller.dispose();
     super.dispose();
   }
