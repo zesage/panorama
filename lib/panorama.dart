@@ -207,6 +207,34 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     scene.update();
   }
 
+  void _updateSensorControl() {
+    _orientationSubscription?.cancel();
+    switch (widget.sensorControl) {
+      case SensorControl.Orientation:
+        motionSensors.orientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
+        _orientationSubscription = motionSensors.orientation.listen((OrientationEvent event) {
+          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
+          _updateView();
+        });
+        break;
+      case SensorControl.AbsoluteOrientation:
+        motionSensors.absoluteOrientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
+        _orientationSubscription = motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
+          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
+          _updateView();
+        });
+        break;
+      default:
+    }
+
+    _screenOrientSubscription?.cancel();
+    if (widget.sensorControl != SensorControl.None) {
+      _screenOrientSubscription = motionSensors.screenOrientation.listen((ScreenOrientationEvent event) {
+        screenOrientation = radians(event.angle);
+      });
+    }
+  }
+
   void _onSceneCreated(Scene scene) {
     this.scene = scene;
     if (widget.child != null) {
@@ -230,27 +258,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     latitude = degrees(widget.latitude);
     longitude = degrees(widget.longitude);
 
-    switch (widget.sensorControl) {
-      case SensorControl.Orientation:
-        motionSensors.orientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
-        _orientationSubscription = motionSensors.orientation.listen((OrientationEvent event) {
-          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
-          _updateView();
-        });
-        break;
-      case SensorControl.AbsoluteOrientation:
-        motionSensors.absoluteOrientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
-        _orientationSubscription = motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
-          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
-          _updateView();
-        });
-        break;
-      default:
-    }
-
-    motionSensors.screenOrientation.listen((ScreenOrientationEvent event) {
-      screenOrientation = radians(event.angle);
-    });
+    _updateSensorControl();
 
     _controller = AnimationController(duration: Duration(milliseconds: 60000), vsync: this)..addListener(_updateView);
     if (widget.sensorControl == SensorControl.None && widget.animSpeed != 0) _controller.repeat();
@@ -278,6 +286,9 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
         surface.mesh.textureRect = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
         scene.updateTexture();
       });
+    }
+    if (widget.sensorControl != oldWidget.sensorControl) {
+      _updateSensorControl();
     }
   }
 
