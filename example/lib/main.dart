@@ -50,6 +50,13 @@ class _MyHomePageState extends State<MyHomePage> {
               });
             },
             child: _imageFile != null ? Image.file(_imageFile) : Image.asset('assets/panorama.jpg'),
+            hotspots: [
+              Hotspot(latitude: -42.0, longitude: -46.0, widget: FloatingActionButton(child: Icon(Icons.search), tooltip: "flowers", onPressed: () {})),
+              Hotspot(latitude: -11.0, longitude: -129.0, widget: FloatingActionButton(child: Icon(Icons.open_in_browser), onPressed: () {})),
+              Hotspot(latitude: -33.0, longitude: 123.0, widget: FloatingActionButton(child: Icon(Icons.arrow_upward), onPressed: () {})),
+              Hotspot(latitude: -23.0, longitude: 23.0, widget: FloatingActionButton(child: Icon(Icons.double_arrow), onPressed: () {})),
+              Hotspot(latitude: -28.0, longitude: 77.0, widget: FloatingActionButton(child: Icon(Icons.apps), onPressed: () {})),
+            ],
           ),
           Text('${_lon.toStringAsFixed(3)}, ${_lat.toStringAsFixed(3)}, ${_tilt.toStringAsFixed(3)}'),
         ],
