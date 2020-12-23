@@ -39,6 +39,7 @@ class Panorama extends StatefulWidget {
     this.sensorControl = SensorControl.None,
     this.onViewChanged,
     this.child,
+    this.hotspots,
   }) : super(key: key);
 
   /// The initial latitude, in degrees, between -90 and 90. default to 0 (the vertical center of the image).
@@ -95,6 +96,9 @@ class Panorama extends StatefulWidget {
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image child;
 
+  /// Place widgets in the panorama.
+  final List<Hotspot> hotspots;
+
   @override
   _PanoramaState createState() => _PanoramaState();
 }
@@ -116,6 +120,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   Vector3 orientation = Vector3(0, radians(90), 0);
   StreamSubscription _orientationSubscription;
   StreamSubscription _screenOrientSubscription;
+  StreamController<Null> _streamController;
+  Stream<Null> _stream;
 
   void _handleScaleStart(ScaleStartDetails details) {
     _lastFocalPoint = details.localFocalPoint;
@@ -252,11 +258,52 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     }
   }
 
+  Vector3 positionFromLatLon(double lat, double lon) {
+    if (scene == null) return Vector3.all(double.maxFinite);
+    // generate a transform matrix
+    final Matrix4 model = Matrix4.identity();
+    model.rotateY(radians(90.0 - lon));
+    model.rotateX(radians(lat));
+    final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix * model;
+    // apply transform
+    final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0);
+    v.applyMatrix4(m);
+    return (v.z < 0.0)
+        // make it invisible if the hotspot is behind the camera
+        ? Vector3.all(double.maxFinite)
+        // transform homogeneous coordinates to NDC and remaps to the viewport
+        : Vector3(
+            (1.0 + v.x / v.w) * scene.camera.viewportWidth / 2,
+            (1.0 - v.y / v.w) * scene.camera.viewportHeight / 2,
+            v.z,
+          );
+  }
+
+  Widget buildHotspotWidgets(List<Hotspot> hotspots) {
+    final List<Widget> widgets = List<Widget>();
+    if (hotspots != null) {
+      for (Hotspot hotspot in hotspots) {
+        final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
+        final Widget child = Positioned(
+          left: pos.x - hotspot.width * hotspot.orgin.dx,
+          top: pos.y - hotspot.height * hotspot.orgin.dy,
+          width: hotspot.width,
+          height: hotspot.height,
+          child: hotspot.widget,
+        );
+        widgets.add(child);
+      }
+    }
+    return Stack(children: widgets);
+  }
+
   @override
   void initState() {
     super.initState();
     latitude = degrees(widget.latitude);
     longitude = degrees(widget.longitude);
+    _streamController = StreamController<Null>.broadcast();
+    _stream = _streamController.stream;
 
     _updateSensorControl();
 
@@ -269,6 +316,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     _orientationSubscription?.cancel();
     _screenOrientSubscription?.cancel();
     _controller.dispose();
+    _streamController.close();
     super.dispose();
   }
 
@@ -294,14 +342,58 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    Widget pano = Stack(
+      children: [
+        Cube(interactive: false, onSceneCreated: _onSceneCreated),
+        StreamBuilder(
+          stream: _stream,
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            return buildHotspotWidgets(widget.hotspots);
+          },
+        ),
+      ],
+    );
+
     return widget.interactive
         ? GestureDetector(
             onScaleStart: _handleScaleStart,
             onScaleUpdate: _handleScaleUpdate,
-            child: Cube(interactive: false, onSceneCreated: _onSceneCreated),
+            child: pano,
           )
-        : Cube(interactive: false, onSceneCreated: _onSceneCreated);
+        : pano;
   }
+}
+
+class Hotspot {
+  Hotspot({
+    this.name,
+    this.latitude,
+    this.longitude,
+    this.orgin = const Offset(0.5, 0.5),
+    this.width = 32.0,
+    this.height = 32.0,
+    this.widget,
+  });
+
+  /// The name of this hotspot.
+  String name;
+
+  /// The initial latitude, in degrees, between -90 and 90.
+  final double latitude;
+
+  /// The initial longitude, in degrees, between -180 and 180.
+  final double longitude;
+
+  /// The local orgin of this hotspot. Default is Offset(0.5, 0.5).
+  final Offset orgin;
+
+  // The width of widget. Default is 32.0
+  double width;
+
+  // The height of widget. Default is 32.0
+  double height;
+
+  Widget widget;
 }
 
 Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments = 16, ui.Image texture}) {
