@@ -258,25 +258,26 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     }
   }
 
+  Matrix4 matrixFromLatLon(double lat, double lon) {
+    return Matrix4.rotationY(radians(90.0 - lon))..rotateX(radians(lat));
+  }
+
   Vector3 positionFromLatLon(double lat, double lon) {
-    if (scene == null) return Vector3.all(double.maxFinite);
-    // generate a transform matrix
-    final Matrix4 model = Matrix4.identity();
-    model.rotateY(radians(90.0 - lon));
-    model.rotateX(radians(lat));
-    final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix * model;
-    // apply transform
-    final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0);
-    v.applyMatrix4(m);
-    return (v.z < 0.0)
-        // make it invisible if the hotspot is behind the camera
-        ? Vector3.all(double.maxFinite)
-        // transform homogeneous coordinates to NDC and remaps to the viewport
-        : Vector3(
-            (1.0 + v.x / v.w) * scene.camera.viewportWidth / 2,
-            (1.0 - v.y / v.w) * scene.camera.viewportHeight / 2,
-            v.z,
-          );
+    if (scene != null) {
+      // generate a transform matrix
+      final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
+      // apply transform
+      final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0)..applyMatrix4(m);
+      // transform homogeneous coordinates to NDC and remaps to the viewport
+      if (v.z >= 0.0)
+        return Vector3(
+          (1.0 + v.x / v.w) * scene.camera.viewportWidth / 2,
+          (1.0 - v.y / v.w) * scene.camera.viewportHeight / 2,
+          v.z,
+        );
+    }
+    // make it invisible if not ready or hotspot is behind the camera
+    return Vector3.all(double.maxFinite);
   }
 
   Widget buildHotspotWidgets(List<Hotspot> hotspots) {
@@ -284,12 +285,18 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     if (hotspots != null) {
       for (Hotspot hotspot in hotspots) {
         final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
+        final Offset orgin = Offset(hotspot.width * hotspot.orgin.dx, hotspot.height * hotspot.orgin.dy);
+        final Matrix4 transform = scene.camera.lookAtMatrix * matrixFromLatLon(hotspot.latitude, hotspot.longitude);
         final Widget child = Positioned(
-          left: pos.x - hotspot.width * hotspot.orgin.dx,
-          top: pos.y - hotspot.height * hotspot.orgin.dy,
+          left: pos.x - orgin.dx,
+          top: pos.y - orgin.dy,
           width: hotspot.width,
           height: hotspot.height,
-          child: hotspot.widget,
+          child: Transform(
+            origin: orgin,
+            transform: transform..invert(),
+            child: hotspot.widget,
+          ),
         );
         widgets.add(child);
       }
