@@ -247,7 +247,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       loadImageFromProvider(widget.child.image).then((ui.Image image) {
         final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, texture: image);
         scene.world.add(Object(name: 'surface', mesh: mesh, backfaceCulling: false));
-        scene.updateTexture();
+        scene.texture = image;
         scene.camera.near = 1.0;
         scene.camera.far = _radius + 1.0;
         scene.camera.fov = 75;
@@ -337,7 +337,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       loadImageFromProvider(widget.child.image).then((ui.Image image) {
         surface.mesh.texture = image;
         surface.mesh.textureRect = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
-        scene.updateTexture();
+        scene.texture = image;
       });
     }
     if (widget.sensorControl != oldWidget.sensorControl) {
