@@ -1,3 +1,8 @@
+## [0.2.1] - 12/29/2020
+
+* Fixed isFinite exception.
+* Speed up texture loading.
+
 ## [0.2.0] - 12/29/2020
 
 * Add hotspots.
