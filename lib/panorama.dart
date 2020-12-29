@@ -263,26 +263,21 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   }
 
   Vector3 positionFromLatLon(double lat, double lon) {
-    if (scene != null) {
-      // generate a transform matrix
-      final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
-      // apply transform
-      final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0)..applyMatrix4(m);
-      // transform homogeneous coordinates to NDC and remaps to the viewport
-      if (v.z >= 0.0)
-        return Vector3(
-          (1.0 + v.x / v.w) * scene.camera.viewportWidth / 2,
-          (1.0 - v.y / v.w) * scene.camera.viewportHeight / 2,
-          v.z,
-        );
-    }
-    // make it invisible if not ready or hotspot is behind the camera
-    return Vector3.all(double.maxFinite);
+    // generate a transform matrix
+    final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
+    // apply transform
+    final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0)..applyMatrix4(m);
+    // transform homogeneous coordinates to NDC and remaps to the viewport
+    return Vector3(
+      (1.0 + v.x / v.w) * scene.camera.viewportWidth / 2,
+      (1.0 - v.y / v.w) * scene.camera.viewportHeight / 2,
+      v.z,
+    );
   }
 
   Widget buildHotspotWidgets(List<Hotspot> hotspots) {
     final List<Widget> widgets = List<Widget>();
-    if (hotspots != null) {
+    if (hotspots != null && scene != null) {
       for (Hotspot hotspot in hotspots) {
         final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
         final Offset orgin = Offset(hotspot.width * hotspot.orgin.dx, hotspot.height * hotspot.orgin.dy);
@@ -295,7 +290,10 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
           child: Transform(
             origin: orgin,
             transform: transform..invert(),
-            child: hotspot.widget,
+            child: Offstage(
+              offstage: pos.z < 0,
+              child: hotspot.widget,
+            ),
           ),
         );
         widgets.add(child);
