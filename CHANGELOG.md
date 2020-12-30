@@ -1,3 +1,7 @@
+## [0.3.0] - 12/30/2020
+
+* Support animated images.
+
 ## [0.2.1] - 12/29/2020
 
 * Fixed isFinite exception.
