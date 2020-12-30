@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:panorama/panorama.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,10 +25,35 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  File _imageFile;
   double _lon = 0;
   double _lat = 0;
   double _tilt = 0;
+  int _panoId = 0;
+  List<Image> panoImages = [
+    Image.asset('assets/panorama.jpg'),
+    Image.asset('assets/panorama2.webp'),
+  ];
+
+  Widget hotspotButton({String text, IconData icon, VoidCallback onPressed}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        FlatButton(
+          shape: CircleBorder(),
+          color: Colors.black38,
+          child: Icon(icon),
+          onPressed: onPressed,
+        ),
+        text != null
+            ? Container(
+                padding: EdgeInsets.all(4.0),
+                decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.all(Radius.circular(4))),
+                child: Center(child: Text(text)),
+              )
+            : Container(),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,23 +73,53 @@ class _MyHomePageState extends State<MyHomePage> {
                 _tilt = tilt;
               });
             },
-            child: _imageFile != null ? Image.file(_imageFile) : Image.asset('assets/panorama.jpg'),
-            hotspots: [
-              Hotspot(latitude: -42.0, longitude: -46.0, widget: FloatingActionButton(child: Icon(Icons.search), tooltip: "flowers", onPressed: () {})),
-              Hotspot(latitude: -11.0, longitude: -129.0, widget: FloatingActionButton(child: Icon(Icons.open_in_browser), onPressed: () {})),
-              Hotspot(latitude: -33.0, longitude: 123.0, widget: FloatingActionButton(child: Icon(Icons.arrow_upward), onPressed: () {})),
-              Hotspot(latitude: -23.0, longitude: 23.0, widget: FloatingActionButton(child: Icon(Icons.double_arrow), onPressed: () {})),
-              Hotspot(latitude: -28.0, longitude: 77.0, widget: FloatingActionButton(child: Icon(Icons.apps), onPressed: () {})),
-            ],
+            child: panoImages[_panoId % panoImages.length],
+            hotspots: _panoId % panoImages.length == 0
+                ? [
+                    Hotspot(
+                      latitude: -15.0,
+                      longitude: -129.0,
+                      width: 90,
+                      height: 75,
+                      widget: hotspotButton(text: "Next scene", icon: Icons.open_in_browser, onPressed: () => setState(() => _panoId++)),
+                    ),
+                    Hotspot(
+                      latitude: -42.0,
+                      longitude: -46.0,
+                      width: 60.0,
+                      height: 60.0,
+                      widget: hotspotButton(icon: Icons.search, onPressed: () {}),
+                    ),
+                    Hotspot(
+                      latitude: -33.0,
+                      longitude: 123.0,
+                      width: 60.0,
+                      height: 60.0,
+                      widget: hotspotButton(icon: Icons.arrow_upward, onPressed: () {}),
+                    ),
+                  ]
+                : [
+                    Hotspot(
+                      latitude: 0.0,
+                      longitude: 160.0,
+                      width: 90.0,
+                      height: 75.0,
+                      widget: hotspotButton(text: "Next scene", icon: Icons.double_arrow, onPressed: () => setState(() => _panoId++)),
+                    ),
+                  ],
           ),
           Text('${_lon.toStringAsFixed(3)}, ${_lat.toStringAsFixed(3)}, ${_tilt.toStringAsFixed(3)}'),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         mini: true,
-        onPressed: () async {
-          _imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
-          setState(() {});
+        onPressed: () {
+          ImagePicker.pickImage(source: ImageSource.gallery).then((value) {
+            setState(() {
+              panoImages.add(Image.file(value));
+              _panoId = panoImages.length - 1;
+            });
+          });
         },
         child: Icon(Icons.panorama),
       ),
