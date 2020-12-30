@@ -105,6 +105,7 @@ class Panorama extends StatefulWidget {
 
 class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin {
   Scene scene;
+  Object surface;
   double latitude;
   double longitude;
   double latitudeDelta = 0;
@@ -122,6 +123,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   StreamSubscription _screenOrientSubscription;
   StreamController<Null> _streamController;
   Stream<Null> _stream;
+  ImageStream _imageStream;
 
   void _handleScaleStart(ScaleStartDetails details) {
     _lastFocalPoint = details.localFocalPoint;
@@ -241,20 +243,34 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     }
   }
 
+  void _updateTexture(ImageInfo imageInfo, bool synchronousCall) {
+    surface.mesh.texture = imageInfo.image;
+    surface.mesh.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
+    scene.texture = imageInfo.image;
+    scene.update();
+  }
+
+  void _loadTexture(ImageProvider provider) {
+    if (provider == null) return;
+    _imageStream?.removeListener(ImageStreamListener(_updateTexture));
+    _imageStream = provider.resolve(ImageConfiguration());
+    ImageStreamListener listener = ImageStreamListener(_updateTexture);
+    _imageStream.addListener(listener);
+  }
+
   void _onSceneCreated(Scene scene) {
     this.scene = scene;
+    scene.camera.near = 1.0;
+    scene.camera.far = _radius + 1.0;
+    scene.camera.fov = 75;
+    scene.camera.zoom = widget.zoom;
+    scene.camera.position.setFrom(Vector3(0, 0, 0.1));
     if (widget.child != null) {
-      loadImageFromProvider(widget.child.image).then((ui.Image image) {
-        final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, texture: image);
-        scene.world.add(Object(name: 'surface', mesh: mesh, backfaceCulling: false));
-        scene.texture = image;
-        scene.camera.near = 1.0;
-        scene.camera.far = _radius + 1.0;
-        scene.camera.fov = 75;
-        scene.camera.zoom = widget.zoom;
-        scene.camera.position.setFrom(Vector3(0, 0, 0.1));
-        _updateView();
-      });
+      _loadTexture(widget.child.image);
+      final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments);
+      surface = Object(name: 'surface', mesh: mesh, backfaceCulling: false);
+      scene.world.add(surface);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _updateView());
     }
   }
 
@@ -318,6 +334,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    _imageStream?.removeListener(ImageStreamListener(_updateTexture));
     _orientationSubscription?.cancel();
     _screenOrientSubscription?.cancel();
     _controller.dispose();
@@ -328,17 +345,12 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   @override
   void didUpdateWidget(Panorama oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final Object surface = scene.world.find(RegExp('surface'));
     if (surface == null) return;
     if (widget.latSegments != oldWidget.latSegments || widget.lonSegments != oldWidget.lonSegments) {
       surface.mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, texture: surface.mesh.texture);
     }
     if (widget.child?.image != oldWidget.child?.image) {
-      loadImageFromProvider(widget.child.image).then((ui.Image image) {
-        surface.mesh.texture = image;
-        surface.mesh.textureRect = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
-        scene.texture = image;
-      });
+      _loadTexture(widget.child?.image);
     }
     if (widget.sensorControl != oldWidget.sensorControl) {
       _updateSensorControl();
@@ -432,19 +444,6 @@ Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments
 
   final Mesh mesh = Mesh(vertices: vertices, texcoords: texcoords, indices: indices, texture: texture);
   return mesh;
-}
-
-/// Get ui.Image from ImageProvider
-Future<ui.Image> loadImageFromProvider(ImageProvider provider) async {
-  final Completer<ui.Image> completer = Completer<ui.Image>();
-  final ImageStream imageStream = provider.resolve(ImageConfiguration());
-  ImageStreamListener listener;
-  listener = ImageStreamListener((ImageInfo imageInfo, bool synchronousCall) {
-    completer.complete(imageInfo.image);
-    imageStream.removeListener(listener);
-  });
-  imageStream.addListener(listener);
-  return completer.future;
 }
 
 Vector3 quaternionToOrientation(Quaternion q) {
