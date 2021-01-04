@@ -37,6 +37,9 @@ class Panorama extends StatefulWidget {
     this.lonSegments = 64,
     this.interactive = true,
     this.sensorControl = SensorControl.None,
+    this.croppedArea = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0),
+    this.croppedFullWidth = 1.0,
+    this.croppedFullHeight = 1.0,
     this.onViewChanged,
     this.child,
     this.hotspots,
@@ -89,6 +92,15 @@ class Panorama extends StatefulWidget {
 
   /// Control the panorama with motion sensors.
   final SensorControl sensorControl;
+
+  /// Area of the image was cropped from the full sized photo sphere.
+  final Rect croppedArea;
+
+  /// Original full width from which the image was cropped.
+  final double croppedFullWidth;
+
+  /// Original full height from which the image was cropped.
+  final double croppedFullHeight;
 
   /// It is called when the view direction has changed, sending the new longitude and latitude values back.
   final Function(double longitude, double latitude, double tilt) onViewChanged;
@@ -267,7 +279,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     scene.camera.position.setFrom(Vector3(0, 0, 0.1));
     if (widget.child != null) {
       _loadTexture(widget.child.image);
-      final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments);
+      final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, croppedArea: widget.croppedArea, croppedFullWidth: widget.croppedFullWidth, croppedFullHeight: widget.croppedFullHeight);
       surface = Object(name: 'surface', mesh: mesh, backfaceCulling: false);
       scene.world.add(surface);
       WidgetsBinding.instance.addPostFrameCallback((_) => _updateView());
@@ -346,8 +358,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   void didUpdateWidget(Panorama oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (surface == null) return;
-    if (widget.latSegments != oldWidget.latSegments || widget.lonSegments != oldWidget.lonSegments) {
-      surface.mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, texture: surface.mesh.texture);
+    if (widget.latSegments != oldWidget.latSegments || widget.lonSegments != oldWidget.lonSegments || widget.croppedArea != oldWidget.croppedArea || widget.croppedFullWidth != oldWidget.croppedFullWidth || widget.croppedFullHeight != oldWidget.croppedFullHeight) {
+      surface.mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, croppedArea: widget.croppedArea, croppedFullWidth: widget.croppedFullWidth, croppedFullHeight: widget.croppedFullHeight);
     }
     if (widget.child?.image != oldWidget.child?.image) {
       _loadTexture(widget.child?.image);
@@ -413,7 +425,7 @@ class Hotspot {
   Widget widget;
 }
 
-Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments = 16, ui.Image texture}) {
+Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments = 16, ui.Image texture, Rect croppedArea = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0), double croppedFullWidth = 1.0, double croppedFullHeight = 1.0}) {
   int count = (latSegments + 1) * (lonSegments + 1);
   List<Vector3> vertices = List<Vector3>(count);
   List<Offset> texcoords = List<Offset>(count);
@@ -421,13 +433,15 @@ Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments
 
   int i = 0;
   for (int y = 0; y <= latSegments; ++y) {
-    final double v = y / latSegments;
+    final double tv = y / latSegments;
+    final double v = (croppedArea.top + croppedArea.height * tv) / croppedFullHeight;
     final double sv = math.sin(v * math.pi);
     final double cv = math.cos(v * math.pi);
     for (int x = 0; x <= lonSegments; ++x) {
-      final double u = x / lonSegments;
+      final double tu = x / lonSegments;
+      final double u = (croppedArea.left + croppedArea.width * tu) / croppedFullWidth;
       vertices[i] = Vector3(radius * math.cos(u * math.pi * 2.0) * sv, radius * cv, radius * math.sin(u * math.pi * 2.0) * sv);
-      texcoords[i] = Offset(u, 1.0 - v);
+      texcoords[i] = Offset(tu, 1.0 - tv);
       i++;
     }
   }
