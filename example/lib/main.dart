@@ -32,7 +32,16 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Image> panoImages = [
     Image.asset('assets/panorama.jpg'),
     Image.asset('assets/panorama2.webp'),
+    Image.asset('assets/panorama_cropped.webp'),
   ];
+
+  void onViewChanged(longitude, latitude, tilt) {
+    setState(() {
+      _lon = longitude;
+      _lat = latitude;
+      _tilt = tilt;
+    });
+  }
 
   Widget hotspotButton({String text, IconData icon, VoidCallback onPressed}) {
     return Column(
@@ -57,57 +66,83 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget panorama;
+    switch (_panoId % panoImages.length) {
+      case 0:
+        panorama = Panorama(
+          animSpeed: 1.0,
+          sensorControl: SensorControl.Orientation,
+          onViewChanged: onViewChanged,
+          child: Image.asset('assets/panorama.jpg'),
+          hotspots: [
+            Hotspot(
+              latitude: -15.0,
+              longitude: -129.0,
+              width: 90,
+              height: 75,
+              widget: hotspotButton(text: "Next scene", icon: Icons.open_in_browser, onPressed: () => setState(() => _panoId++)),
+            ),
+            Hotspot(
+              latitude: -42.0,
+              longitude: -46.0,
+              width: 60.0,
+              height: 60.0,
+              widget: hotspotButton(icon: Icons.search, onPressed: () => setState(() => _panoId = 2)),
+            ),
+            Hotspot(
+              latitude: -33.0,
+              longitude: 123.0,
+              width: 60.0,
+              height: 60.0,
+              widget: hotspotButton(icon: Icons.arrow_upward, onPressed: () {}),
+            ),
+          ],
+        );
+        break;
+      case 2:
+        panorama = Panorama(
+          animSpeed: 1.0,
+          sensorControl: SensorControl.Orientation,
+          onViewChanged: onViewChanged,
+          croppedArea: Rect.fromLTWH(2533.0, 1265.0, 5065.0, 2533.0),
+          croppedFullWidth: 10132.0,
+          croppedFullHeight: 5066.0,
+          child: Image.asset('assets/panorama_cropped.jpg'),
+          hotspots: [
+            Hotspot(
+              latitude: 0.0,
+              longitude: -46.0,
+              width: 90.0,
+              height: 75.0,
+              widget: hotspotButton(text: "Next scene", icon: Icons.double_arrow, onPressed: () => setState(() => _panoId++)),
+            ),
+          ],
+        );
+        break;
+      default:
+        panorama = Panorama(
+          animSpeed: 1.0,
+          sensorControl: SensorControl.Orientation,
+          onViewChanged: onViewChanged,
+          child: panoImages[_panoId % panoImages.length],
+          hotspots: [
+            Hotspot(
+              latitude: 0.0,
+              longitude: 160.0,
+              width: 90.0,
+              height: 75.0,
+              widget: hotspotButton(text: "Next scene", icon: Icons.double_arrow, onPressed: () => setState(() => _panoId++)),
+            ),
+          ],
+        );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
       body: Stack(
         children: [
-          Panorama(
-            animSpeed: 1.0,
-            sensorControl: SensorControl.Orientation,
-            onViewChanged: (longitude, latitude, tilt) {
-              setState(() {
-                _lon = longitude;
-                _lat = latitude;
-                _tilt = tilt;
-              });
-            },
-            child: panoImages[_panoId % panoImages.length],
-            hotspots: _panoId % panoImages.length == 0
-                ? [
-                    Hotspot(
-                      latitude: -15.0,
-                      longitude: -129.0,
-                      width: 90,
-                      height: 75,
-                      widget: hotspotButton(text: "Next scene", icon: Icons.open_in_browser, onPressed: () => setState(() => _panoId++)),
-                    ),
-                    Hotspot(
-                      latitude: -42.0,
-                      longitude: -46.0,
-                      width: 60.0,
-                      height: 60.0,
-                      widget: hotspotButton(icon: Icons.search, onPressed: () {}),
-                    ),
-                    Hotspot(
-                      latitude: -33.0,
-                      longitude: 123.0,
-                      width: 60.0,
-                      height: 60.0,
-                      widget: hotspotButton(icon: Icons.arrow_upward, onPressed: () {}),
-                    ),
-                  ]
-                : [
-                    Hotspot(
-                      latitude: 0.0,
-                      longitude: 160.0,
-                      width: 90.0,
-                      height: 75.0,
-                      widget: hotspotButton(text: "Next scene", icon: Icons.double_arrow, onPressed: () => setState(() => _panoId++)),
-                    ),
-                  ],
-          ),
+          panorama,
           Text('${_lon.toStringAsFixed(3)}, ${_lat.toStringAsFixed(3)}, ${_tilt.toStringAsFixed(3)}'),
         ],
       ),
