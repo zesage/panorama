@@ -1,3 +1,8 @@
+## [0.3.1] - 01/08/2021
+
+* Add cropped area.
+* Add onTap & onLongPress event.
+
 ## [0.3.0] - 12/30/2020
 
 * Support animated images.
