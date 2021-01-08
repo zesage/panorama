@@ -41,6 +41,10 @@ class Panorama extends StatefulWidget {
     this.croppedFullWidth = 1.0,
     this.croppedFullHeight = 1.0,
     this.onViewChanged,
+    this.onTap,
+    this.onLongPressStart,
+    this.onLongPressMoveUpdate,
+    this.onLongPressEnd,
     this.child,
     this.hotspots,
   }) : super(key: key);
@@ -102,8 +106,20 @@ class Panorama extends StatefulWidget {
   /// Original full height from which the image was cropped.
   final double croppedFullHeight;
 
-  /// It is called when the view direction has changed, sending the new longitude and latitude values back.
+  /// This event will be called when the view direction has changed, it contains latitude and longitude about the current view.
   final Function(double longitude, double latitude, double tilt) onViewChanged;
+
+  /// This event will be called when the user has tapped, it contains latitude and longitude about where the user tapped.
+  final Function(double longitude, double latitude, double tilt) onTap;
+
+  /// This event will be called when the user has started a long press, it contains latitude and longitude about where the user pressed.
+  final Function(double longitude, double latitude, double tilt) onLongPressStart;
+
+  /// This event will be called when the user has drag-moved after a long press, it contains latitude and longitude about where the user pressed.
+  final Function(double longitude, double latitude, double tilt) onLongPressMoveUpdate;
+
+  /// This event will be called when the user has stopped a long presses, it contains latitude and longitude about where the user pressed.
+  final Function(double longitude, double latitude, double tilt) onLongPressEnd;
 
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image child;
@@ -136,6 +152,26 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   StreamController<Null> _streamController;
   Stream<Null> _stream;
   ImageStream _imageStream;
+
+  void _handleTapUp(TapUpDetails details) {
+    final Vector3 o = positionToLatLon(details.localPosition.dx, details.localPosition.dy);
+    widget.onTap(degrees(o.x), degrees(-o.y), degrees(o.z));
+  }
+
+  void _handleLongPressStart(LongPressStartDetails details) {
+    final Vector3 o = positionToLatLon(details.localPosition.dx, details.localPosition.dy);
+    widget.onLongPressStart(degrees(o.x), degrees(-o.y), degrees(o.z));
+  }
+
+  void _handleLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+    final Vector3 o = positionToLatLon(details.localPosition.dx, details.localPosition.dy);
+    widget.onLongPressMoveUpdate(degrees(o.x), degrees(-o.y), degrees(o.z));
+  }
+
+  void _handleLongPressEnd(LongPressEndDetails details) {
+    final Vector3 o = positionToLatLon(details.localPosition.dx, details.localPosition.dy);
+    widget.onLongPressEnd(degrees(o.x), degrees(-o.y), degrees(o.z));
+  }
 
   void _handleScaleStart(ScaleStartDetails details) {
     _lastFocalPoint = details.localFocalPoint;
@@ -290,12 +326,28 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     return Matrix4.rotationY(radians(90.0 - lon))..rotateX(radians(lat));
   }
 
+  Vector3 positionToLatLon(double x, double y) {
+    // transform viewport coordinate to NDC, values between -1 and 1
+    final Vector4 v = Vector4(2.0 * x / scene.camera.viewportWidth - 1.0, 1.0 - 2.0 * y / scene.camera.viewportHeight, 1.0, 1.0);
+    // create projection matrix
+    final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix;
+    // apply inversed projection matrix
+    m.invert();
+    v.applyMatrix4(m);
+    // apply perspective division
+    v.scale(1 / v.w);
+    // get rotation from two vectors
+    final Quaternion q = Quaternion.fromTwoVectors(v.xyz, Vector3(0.0, 0.0, -_radius));
+    // get euler angles from rotation
+    return quaternionToOrientation(q * Quaternion.axisAngle(Vector3(0, 1, 0), math.pi * 0.5));
+  }
+
   Vector3 positionFromLatLon(double lat, double lon) {
-    // generate a transform matrix
+    // create projection matrix
     final Matrix4 m = scene.camera.projectionMatrix * scene.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
-    // apply transform
+    // apply projection atrix
     final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0)..applyMatrix4(m);
-    // transform homogeneous coordinates to NDC and remaps to the viewport
+    // apply perspective division and transform NDC to the viewport coordinate
     return Vector3(
       (1.0 + v.x / v.w) * scene.camera.viewportWidth / 2,
       (1.0 - v.y / v.w) * scene.camera.viewportHeight / 2,
@@ -387,6 +439,10 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
         ? GestureDetector(
             onScaleStart: _handleScaleStart,
             onScaleUpdate: _handleScaleUpdate,
+            onTapUp: widget.onTap == null ? null : _handleTapUp,
+            onLongPressStart: widget.onLongPressStart == null ? null : _handleLongPressStart,
+            onLongPressMoveUpdate: widget.onLongPressMoveUpdate == null ? null : _handleLongPressMoveUpdate,
+            onLongPressEnd: widget.onLongPressEnd == null ? null : _handleLongPressEnd,
             child: pano,
           )
         : pano;

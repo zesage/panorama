@@ -73,6 +73,10 @@ class _MyHomePageState extends State<MyHomePage> {
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
+          onTap: (longitude, latitude, tilt) => print('onTap: $longitude, $latitude, $tilt'),
+          onLongPressStart: (longitude, latitude, tilt) => print('onLongPressStart: $longitude, $latitude, $tilt'),
+          onLongPressMoveUpdate: (longitude, latitude, tilt) => print('onLongPressMoveUpdate: $longitude, $latitude, $tilt'),
+          onLongPressEnd: (longitude, latitude, tilt) => print('onLongPressEnd: $longitude, $latitude, $tilt'),
           child: Image.asset('assets/panorama.jpg'),
           hotspots: [
             Hotspot(
