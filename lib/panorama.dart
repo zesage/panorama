@@ -292,8 +292,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   }
 
   void _updateTexture(ImageInfo imageInfo, bool synchronousCall) {
-    surface.mesh.texture = imageInfo.image;
-    surface.mesh.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
+    surface?.mesh?.texture = imageInfo.image;
+    surface?.mesh?.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
     scene.texture = imageInfo.image;
     scene.update();
   }
@@ -314,9 +314,9 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     scene.camera.zoom = widget.zoom;
     scene.camera.position.setFrom(Vector3(0, 0, 0.1));
     if (widget.child != null) {
-      _loadTexture(widget.child.image);
       final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, croppedArea: widget.croppedArea, croppedFullWidth: widget.croppedFullWidth, croppedFullHeight: widget.croppedFullHeight);
       surface = Object(name: 'surface', mesh: mesh, backfaceCulling: false);
+      _loadTexture(widget.child.image);
       scene.world.add(surface);
       WidgetsBinding.instance.addPostFrameCallback((_) => _updateView());
     }
