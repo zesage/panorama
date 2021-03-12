@@ -1,3 +1,7 @@
+## [0.3.2] - 01/09/2021
+
+* Fixed some bugs
+
 ## [0.3.1] - 01/08/2021
 
 * Add cropped area.
