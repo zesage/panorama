@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:panorama/panorama.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,9 +17,9 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key? key, this.title}) : super(key: key);
 
-  final String title;
+  final String? title;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -34,6 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Image.asset('assets/panorama2.webp'),
     Image.asset('assets/panorama_cropped.webp'),
   ];
+  ImagePicker picker = ImagePicker();
 
   void onViewChanged(longitude, latitude, tilt) {
     setState(() {
@@ -43,13 +45,16 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget hotspotButton({String text, IconData icon, VoidCallback onPressed}) {
+  Widget hotspotButton({String? text, IconData? icon, VoidCallback? onPressed}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        FlatButton(
-          shape: CircleBorder(),
-          color: Colors.black38,
+        TextButton(
+          style: ButtonStyle(
+            shape: MaterialStateProperty.all(CircleBorder()),
+            backgroundColor: MaterialStateProperty.all(Colors.black38),
+            foregroundColor: MaterialStateProperty.all(Colors.white),
+          ),
           child: Icon(icon),
           onPressed: onPressed,
         ),
@@ -142,7 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title!),
       ),
       body: Stack(
         children: [
@@ -152,12 +157,13 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         mini: true,
-        onPressed: () {
-          ImagePicker.pickImage(source: ImageSource.gallery).then((value) {
-            setState(() {
-              panoImages.add(Image.file(value));
+        onPressed: () async {
+          final pickedFile = await picker.getImage(source: ImageSource.gallery);
+          setState(() {
+            if (pickedFile != null) {
+              panoImages.add(Image.file(File(pickedFile.path)));
               _panoId = panoImages.length - 1;
-            });
+            }
           });
         },
         child: Icon(Icons.panorama),
