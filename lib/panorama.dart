@@ -261,6 +261,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     q.rotate(scene!.camera.target..setFrom(Vector3(0, 0, -_radius)));
     q.rotate(scene!.camera.up..setFrom(Vector3(0, 1, 0)));
     scene!.update();
+    _streamController.add(null);
   }
 
   void _updateSensorControl() {
