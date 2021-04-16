@@ -270,15 +270,13 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       case SensorControl.Orientation:
         motionSensors.orientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
         _orientationSubscription = motionSensors.orientation.listen((OrientationEvent event) {
-          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
-          _updateView();
+          orientation.setValues(event.yaw, event.pitch, event.roll);
         });
         break;
       case SensorControl.AbsoluteOrientation:
         motionSensors.absoluteOrientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
         _orientationSubscription = motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
-          orientation.setFrom(Vector3(event.yaw, event.pitch, event.roll));
-          _updateView();
+          orientation.setValues(event.yaw, event.pitch, event.roll);
         });
         break;
       default:
@@ -319,7 +317,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       surface = Object(name: 'surface', mesh: mesh, backfaceCulling: false);
       _loadTexture(widget.child!.image);
       scene.world.add(surface!);
-      WidgetsBinding.instance!.addPostFrameCallback((_) => _updateView());
+      _updateView();
     }
   }
 
@@ -346,7 +344,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   Vector3 positionFromLatLon(double lat, double lon) {
     // create projection matrix
     final Matrix4 m = scene!.camera.projectionMatrix * scene!.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
-    // apply projection atrix
+    // apply projection matrix
     final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0)..applyMatrix4(m);
     // apply perspective division and transform NDC to the viewport coordinate
     return Vector3(
@@ -394,7 +392,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     _updateSensorControl();
 
     _controller = AnimationController(duration: Duration(milliseconds: 60000), vsync: this)..addListener(_updateView);
-    if (widget.sensorControl == SensorControl.None && widget.animSpeed != 0) _controller.repeat();
+    if (widget.sensorControl != SensorControl.None || widget.animSpeed != 0) _controller.repeat();
   }
 
   @override
