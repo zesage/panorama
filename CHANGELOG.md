@@ -1,3 +1,8 @@
+## [0.4.1] - 03/13/2021
+
+* Fix hotspots no update
+* Fix rotation
+
 ## [0.4.0] - 03/13/2021
 
 * migrate to null safety
