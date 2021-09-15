@@ -211,8 +211,12 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     zoomDelta *= 1 - _dampingFactor;
     scene!.camera.zoom = zoom.clamp(widget.minZoom, widget.maxZoom);
     // stop animation if not needed
-    if (latitudeDelta.abs() < 0.001 && longitudeDelta.abs() < 0.001 && zoomDelta.abs() < 0.001) {
-      if (widget.animSpeed == 0 && _controller.isAnimating) _controller.stop();
+    if (latitudeDelta.abs() < 0.001 &&
+        longitudeDelta.abs() < 0.001 &&
+        zoomDelta.abs() < 0.001) {
+      if (widget.sensorControl == SensorControl.None &&
+          widget.animSpeed == 0 &&
+          _controller.isAnimating) _controller.stop();
     }
 
     // rotate for screen orientation
