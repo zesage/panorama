@@ -45,6 +45,7 @@ class Panorama extends StatefulWidget {
     this.onLongPressStart,
     this.onLongPressMoveUpdate,
     this.onLongPressEnd,
+    this.onImageLoad,
     this.child,
     this.hotspots,
   }) : super(key: key);
@@ -120,6 +121,9 @@ class Panorama extends StatefulWidget {
 
   /// This event will be called when the user has stopped a long presses, it contains latitude and longitude about where the user pressed.
   final Function(double longitude, double latitude, double tilt)? onLongPressEnd;
+  
+  /// This event will be called when provided image is loaded on texture.
+  final Function()? onImageLoad;
 
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image? child;
@@ -295,6 +299,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     surface?.mesh.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
     scene!.texture = imageInfo.image;
     scene!.update();
+    widget.onImageLoad!();
   }
 
   void _loadTexture(ImageProvider? provider) {
