@@ -303,7 +303,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     surface?.mesh.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
     scene!.texture = imageInfo.image;
     scene!.update();
-    widget.onImageLoad!();
+    widget.onImageLoad?.call();
   }
 
   void _loadTexture(ImageProvider? provider) {
