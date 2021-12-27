@@ -382,15 +382,17 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     if (hotspots != null && scene != null) {
       for (Hotspot hotspot in hotspots) {
         final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
+        double adjustedWidth = hotspot.width * scene!.camera.zoom;
+        double adjustedHeight = hotspot.height * scene!.camera.zoom;
         final Offset origin =
-            Offset(hotspot.width * hotspot.origin.dx, hotspot.height * hotspot.origin.dy);
+            Offset(adjustedWidth * hotspot.origin.dx, adjustedHeight * hotspot.origin.dy);
         final Matrix4 transform =
             scene!.camera.lookAtMatrix * matrixFromLatLon(hotspot.latitude, hotspot.longitude);
         final Widget child = Positioned(
           left: pos.x - origin.dx,
           top: pos.y - origin.dy,
-          width: hotspot.width,
-          height: hotspot.height,
+          width: adjustedWidth,
+          height: adjustedHeight,
           child: Transform(
             origin: origin,
             transform: transform..invert(),
