@@ -382,8 +382,10 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     if (hotspots != null && scene != null) {
       for (Hotspot hotspot in hotspots) {
         final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
-        double adjustedWidth = hotspot.width * scene!.camera.zoom;
-        double adjustedHeight = hotspot.height * scene!.camera.zoom;
+        double adjustedWidth =
+            hotspot.hasFlexibleSize ? hotspot.width * scene!.camera.zoom : hotspot.width;
+        double adjustedHeight =
+            hotspot.hasFlexibleSize ? hotspot.height * scene!.camera.zoom : hotspot.height;
         final Offset origin =
             Offset(adjustedWidth * hotspot.origin.dx, adjustedHeight * hotspot.origin.dy);
         final Matrix4 transform =
@@ -495,6 +497,7 @@ class Hotspot {
     this.origin = const Offset(0.5, 0.5),
     this.width = 32.0,
     this.height = 32.0,
+    this.hasFlexibleSize = true,
     this.widget,
   });
 
@@ -510,11 +513,14 @@ class Hotspot {
   /// The local origin of this hotspot. Default is Offset(0.5, 0.5).
   final Offset origin;
 
-  // The width of widget. Default is 32.0
+  /// The width of widget. Default is 32.0
   double width;
 
-  // The height of widget. Default is 32.0
+  /// The height of widget. Default is 32.0
   double height;
+
+  /// Defines if widget size adjusts with zoom level. Default is true.
+  bool hasFlexibleSize;
 
   Widget? widget;
 }
