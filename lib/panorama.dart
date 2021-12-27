@@ -382,17 +382,17 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     if (hotspots != null && scene != null) {
       for (Hotspot hotspot in hotspots) {
         final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
-        final Offset orgin =
-            Offset(hotspot.width * hotspot.orgin.dx, hotspot.height * hotspot.orgin.dy);
+        final Offset origin =
+            Offset(hotspot.width * hotspot.origin.dx, hotspot.height * hotspot.origin.dy);
         final Matrix4 transform =
             scene!.camera.lookAtMatrix * matrixFromLatLon(hotspot.latitude, hotspot.longitude);
         final Widget child = Positioned(
-          left: pos.x - orgin.dx,
-          top: pos.y - orgin.dy,
+          left: pos.x - origin.dx,
+          top: pos.y - origin.dy,
           width: hotspot.width,
           height: hotspot.height,
           child: Transform(
-            origin: orgin,
+            origin: origin,
             transform: transform..invert(),
             child: Offstage(
               offstage: pos.z < 0,
@@ -490,7 +490,7 @@ class Hotspot {
     this.name,
     this.latitude = 0.0,
     this.longitude = 0.0,
-    this.orgin = const Offset(0.5, 0.5),
+    this.origin = const Offset(0.5, 0.5),
     this.width = 32.0,
     this.height = 32.0,
     this.widget,
@@ -505,8 +505,8 @@ class Hotspot {
   /// The initial longitude, in degrees, between -180 and 180.
   final double longitude;
 
-  /// The local orgin of this hotspot. Default is Offset(0.5, 0.5).
-  final Offset orgin;
+  /// The local origin of this hotspot. Default is Offset(0.5, 0.5).
+  final Offset origin;
 
   // The width of widget. Default is 32.0
   double width;
