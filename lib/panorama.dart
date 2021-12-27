@@ -153,8 +153,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   Vector3 orientation = Vector3(0, radians(90), 0);
   StreamSubscription? _orientationSubscription;
   StreamSubscription? _screenOrientSubscription;
-  late StreamController<Null> _streamController;
-  Stream<Null>? _stream;
+  late StreamController<void> _streamController;
+  Stream<void>? _stream;
   ImageStream? _imageStream;
 
   void _handleTapUp(TapUpDetails details) {
@@ -411,7 +411,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     super.initState();
     latitude = degrees(widget.latitude);
     longitude = degrees(widget.longitude);
-    _streamController = StreamController<Null>.broadcast();
+    _streamController = StreamController<void>.broadcast();
     _stream = _streamController.stream;
 
     _updateSensorControl();
