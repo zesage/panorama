@@ -19,7 +19,7 @@ enum SensorControl {
 }
 
 class Panorama extends StatefulWidget {
-  Panorama({
+  const Panorama({
     Key? key,
     this.latitude = 0,
     this.longitude = 0,
@@ -121,7 +121,7 @@ class Panorama extends StatefulWidget {
 
   /// This event will be called when the user has stopped a long presses, it contains latitude and longitude about where the user pressed.
   final Function(double longitude, double latitude, double tilt)? onLongPressEnd;
-  
+
   /// This event will be called when provided image is loaded on texture.
   final Function()? onImageLoad;
 
@@ -145,16 +145,16 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   double zoomDelta = 0;
   late Offset _lastFocalPoint;
   double? _lastZoom;
-  double _radius = 500;
-  double _dampingFactor = 0.05;
+  final double _radius = 500;
+  final double _dampingFactor = 0.05;
   double _animateDirection = 1.0;
   late AnimationController _controller;
   double screenOrientation = 0.0;
   Vector3 orientation = Vector3(0, radians(90), 0);
   StreamSubscription? _orientationSubscription;
   StreamSubscription? _screenOrientSubscription;
-  late StreamController<Null> _streamController;
-  Stream<Null>? _stream;
+  late StreamController<void> _streamController;
+  Stream<void>? _stream;
   ImageStream? _imageStream;
 
   void _handleTapUp(TapUpDetails details) {
@@ -186,17 +186,21 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     final offset = details.localFocalPoint - _lastFocalPoint;
     _lastFocalPoint = details.localFocalPoint;
     latitudeDelta += widget.sensitivity * 0.5 * math.pi * offset.dy / scene!.camera.viewportHeight;
-    longitudeDelta -= widget.sensitivity * _animateDirection * 0.5 * math.pi * offset.dx / scene!.camera.viewportHeight;
-    if (_lastZoom == null) {
-      _lastZoom = scene!.camera.zoom;
-    }
+    longitudeDelta -= widget.sensitivity *
+        _animateDirection *
+        0.5 *
+        math.pi *
+        offset.dx /
+        scene!.camera.viewportHeight;
+    _lastZoom ??= scene!.camera.zoom;
     zoomDelta += _lastZoom! * details.scale - (scene!.camera.zoom + zoomDelta);
     if (widget.sensorControl == SensorControl.None && !_controller.isAnimating) {
       _controller.reset();
       if (widget.animSpeed != 0) {
         _controller.repeat();
-      } else
+      } else {
         _controller.forward();
+      }
     }
   }
 
@@ -215,9 +219,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     zoomDelta *= 1 - _dampingFactor;
     scene!.camera.zoom = zoom.clamp(widget.minZoom, widget.maxZoom);
     // stop animation if not needed
-    if (latitudeDelta.abs() < 0.001 &&
-        longitudeDelta.abs() < 0.001 &&
-        zoomDelta.abs() < 0.001) {
+    if (latitudeDelta.abs() < 0.001 && longitudeDelta.abs() < 0.001 && zoomDelta.abs() < 0.001) {
       if (widget.sensorControl == SensorControl.None &&
           widget.animSpeed == 0 &&
           _controller.isAnimating) _controller.stop();
@@ -245,10 +247,11 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
         longitude = (lon + longitude < minLon ? minLon : maxLon) - lon;
         // reverse rotation when reaching the boundary
         if (widget.animSpeed != 0) {
-          if (widget.animReverse)
+          if (widget.animReverse) {
             _animateDirection *= -1.0;
-          else
+          } else {
             _controller.stop();
+          }
         }
       }
     }
@@ -283,7 +286,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
         break;
       case SensorControl.AbsoluteOrientation:
         motionSensors.absoluteOrientationUpdateInterval = Duration.microsecondsPerSecond ~/ 60;
-        _orientationSubscription = motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
+        _orientationSubscription =
+            motionSensors.absoluteOrientation.listen((AbsoluteOrientationEvent event) {
           orientation.setValues(event.yaw, event.pitch, event.roll);
         });
         break;
@@ -292,7 +296,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
     _screenOrientSubscription?.cancel();
     if (widget.sensorControl != SensorControl.None) {
-      _screenOrientSubscription = motionSensors.screenOrientation.listen((ScreenOrientationEvent event) {
+      _screenOrientSubscription =
+          motionSensors.screenOrientation.listen((ScreenOrientationEvent event) {
         screenOrientation = radians(event.angle!);
       });
     }
@@ -300,7 +305,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   void _updateTexture(ImageInfo imageInfo, bool synchronousCall) {
     surface?.mesh.texture = imageInfo.image;
-    surface?.mesh.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
+    surface?.mesh.textureRect =
+        Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
     scene!.texture = imageInfo.image;
     scene!.update();
     widget.onImageLoad?.call();
@@ -309,7 +315,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   void _loadTexture(ImageProvider? provider) {
     if (provider == null) return;
     _imageStream?.removeListener(ImageStreamListener(_updateTexture));
-    _imageStream = provider.resolve(ImageConfiguration());
+    _imageStream = provider.resolve(const ImageConfiguration());
     ImageStreamListener listener = ImageStreamListener(_updateTexture);
     _imageStream!.addListener(listener);
   }
@@ -322,7 +328,13 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     scene.camera.zoom = widget.zoom;
     scene.camera.position.setFrom(Vector3(0, 0, 0.1));
     if (widget.child != null) {
-      final Mesh mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, croppedArea: widget.croppedArea, croppedFullWidth: widget.croppedFullWidth, croppedFullHeight: widget.croppedFullHeight);
+      final Mesh mesh = generateSphereMesh(
+          radius: _radius,
+          latSegments: widget.latSegments,
+          lonSegments: widget.lonSegments,
+          croppedArea: widget.croppedArea,
+          croppedFullWidth: widget.croppedFullWidth,
+          croppedFullHeight: widget.croppedFullHeight);
       surface = Object(name: 'surface', mesh: mesh, backfaceCulling: false);
       _loadTexture(widget.child!.image);
       scene.world.add(surface!);
@@ -336,7 +348,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   Vector3 positionToLatLon(double x, double y) {
     // transform viewport coordinate to NDC, values between -1 and 1
-    final Vector4 v = Vector4(2.0 * x / scene!.camera.viewportWidth - 1.0, 1.0 - 2.0 * y / scene!.camera.viewportHeight, 1.0, 1.0);
+    final Vector4 v = Vector4(2.0 * x / scene!.camera.viewportWidth - 1.0,
+        1.0 - 2.0 * y / scene!.camera.viewportHeight, 1.0, 1.0);
     // create projection matrix
     final Matrix4 m = scene!.camera.projectionMatrix * scene!.camera.lookAtMatrix;
     // apply inversed projection matrix
@@ -352,7 +365,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   Vector3 positionFromLatLon(double lat, double lon) {
     // create projection matrix
-    final Matrix4 m = scene!.camera.projectionMatrix * scene!.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
+    final Matrix4 m =
+        scene!.camera.projectionMatrix * scene!.camera.lookAtMatrix * matrixFromLatLon(lat, lon);
     // apply projection matrix
     final Vector4 v = Vector4(0.0, 0.0, -_radius, 1.0)..applyMatrix4(m);
     // apply perspective division and transform NDC to the viewport coordinate
@@ -368,15 +382,21 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     if (hotspots != null && scene != null) {
       for (Hotspot hotspot in hotspots) {
         final Vector3 pos = positionFromLatLon(hotspot.latitude, hotspot.longitude);
-        final Offset orgin = Offset(hotspot.width * hotspot.orgin.dx, hotspot.height * hotspot.orgin.dy);
-        final Matrix4 transform = scene!.camera.lookAtMatrix * matrixFromLatLon(hotspot.latitude, hotspot.longitude);
+        double adjustedWidth =
+            hotspot.hasFlexibleSize ? hotspot.width * scene!.camera.zoom : hotspot.width;
+        double adjustedHeight =
+            hotspot.hasFlexibleSize ? hotspot.height * scene!.camera.zoom : hotspot.height;
+        final Offset origin =
+            Offset(adjustedWidth * hotspot.origin.dx, adjustedHeight * hotspot.origin.dy);
+        final Matrix4 transform =
+            scene!.camera.lookAtMatrix * matrixFromLatLon(hotspot.latitude, hotspot.longitude);
         final Widget child = Positioned(
-          left: pos.x - orgin.dx,
-          top: pos.y - orgin.dy,
-          width: hotspot.width,
-          height: hotspot.height,
+          left: pos.x - origin.dx,
+          top: pos.y - origin.dy,
+          width: adjustedWidth,
+          height: adjustedHeight,
           child: Transform(
-            origin: orgin,
+            origin: origin,
             transform: transform..invert(),
             child: Offstage(
               offstage: pos.z < 0,
@@ -395,12 +415,13 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     super.initState();
     latitude = degrees(widget.latitude);
     longitude = degrees(widget.longitude);
-    _streamController = StreamController<Null>.broadcast();
+    _streamController = StreamController<void>.broadcast();
     _stream = _streamController.stream;
 
     _updateSensorControl();
 
-    _controller = AnimationController(duration: Duration(milliseconds: 60000), vsync: this)..addListener(_updateView);
+    _controller = AnimationController(duration: const Duration(milliseconds: 60000), vsync: this)
+      ..addListener(_updateView);
     if (widget.sensorControl != SensorControl.None || widget.animSpeed != 0) _controller.repeat();
   }
 
@@ -418,8 +439,18 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   void didUpdateWidget(Panorama oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (surface == null) return;
-    if (widget.latSegments != oldWidget.latSegments || widget.lonSegments != oldWidget.lonSegments || widget.croppedArea != oldWidget.croppedArea || widget.croppedFullWidth != oldWidget.croppedFullWidth || widget.croppedFullHeight != oldWidget.croppedFullHeight) {
-      surface!.mesh = generateSphereMesh(radius: _radius, latSegments: widget.latSegments, lonSegments: widget.lonSegments, croppedArea: widget.croppedArea, croppedFullWidth: widget.croppedFullWidth, croppedFullHeight: widget.croppedFullHeight);
+    if (widget.latSegments != oldWidget.latSegments ||
+        widget.lonSegments != oldWidget.lonSegments ||
+        widget.croppedArea != oldWidget.croppedArea ||
+        widget.croppedFullWidth != oldWidget.croppedFullWidth ||
+        widget.croppedFullHeight != oldWidget.croppedFullHeight) {
+      surface!.mesh = generateSphereMesh(
+          radius: _radius,
+          latSegments: widget.latSegments,
+          lonSegments: widget.lonSegments,
+          croppedArea: widget.croppedArea,
+          croppedFullWidth: widget.croppedFullWidth,
+          croppedFullHeight: widget.croppedFullHeight);
     }
     if (widget.child?.image != oldWidget.child?.image) {
       _loadTexture(widget.child?.image);
@@ -449,7 +480,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
             onScaleUpdate: _handleScaleUpdate,
             onTapUp: widget.onTap == null ? null : _handleTapUp,
             onLongPressStart: widget.onLongPressStart == null ? null : _handleLongPressStart,
-            onLongPressMoveUpdate: widget.onLongPressMoveUpdate == null ? null : _handleLongPressMoveUpdate,
+            onLongPressMoveUpdate:
+                widget.onLongPressMoveUpdate == null ? null : _handleLongPressMoveUpdate,
             onLongPressEnd: widget.onLongPressEnd == null ? null : _handleLongPressEnd,
             child: pano,
           )
@@ -462,9 +494,10 @@ class Hotspot {
     this.name,
     this.latitude = 0.0,
     this.longitude = 0.0,
-    this.orgin = const Offset(0.5, 0.5),
+    this.origin = const Offset(0.5, 0.5),
     this.width = 32.0,
     this.height = 32.0,
+    this.hasFlexibleSize = true,
     this.widget,
   });
 
@@ -477,19 +510,29 @@ class Hotspot {
   /// The initial longitude, in degrees, between -180 and 180.
   final double longitude;
 
-  /// The local orgin of this hotspot. Default is Offset(0.5, 0.5).
-  final Offset orgin;
+  /// The local origin of this hotspot. Default is Offset(0.5, 0.5).
+  final Offset origin;
 
-  // The width of widget. Default is 32.0
+  /// The width of widget. Default is 32.0
   double width;
 
-  // The height of widget. Default is 32.0
+  /// The height of widget. Default is 32.0
   double height;
+
+  /// Defines if widget size adjusts with zoom level. Default is true.
+  bool hasFlexibleSize;
 
   Widget? widget;
 }
 
-Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments = 16, ui.Image? texture, Rect croppedArea = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0), double croppedFullWidth = 1.0, double croppedFullHeight = 1.0}) {
+Mesh generateSphereMesh(
+    {num radius = 1.0,
+    int latSegments = 16,
+    int lonSegments = 16,
+    ui.Image? texture,
+    Rect croppedArea = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0),
+    double croppedFullWidth = 1.0,
+    double croppedFullHeight = 1.0}) {
   int count = (latSegments + 1) * (lonSegments + 1);
   List<Vector3> vertices = List<Vector3>.filled(count, Vector3.zero());
   List<Offset> texcoords = List<Offset>.filled(count, Offset.zero);
@@ -504,7 +547,8 @@ Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments
     for (int x = 0; x <= lonSegments; ++x) {
       final double tu = x / lonSegments;
       final double u = (croppedArea.left + croppedArea.width * tu) / croppedFullWidth;
-      vertices[i] = Vector3(radius * math.cos(u * math.pi * 2.0) * sv, radius * cv, radius * math.sin(u * math.pi * 2.0) * sv);
+      vertices[i] = Vector3(radius * math.cos(u * math.pi * 2.0) * sv, radius * cv,
+          radius * math.sin(u * math.pi * 2.0) * sv);
       texcoords[i] = Offset(tu, 1.0 - tv);
       i++;
     }
@@ -520,7 +564,8 @@ Mesh generateSphereMesh({num radius = 1.0, int latSegments = 16, int lonSegments
     }
   }
 
-  final Mesh mesh = Mesh(vertices: vertices, texcoords: texcoords, indices: indices, texture: texture);
+  final Mesh mesh =
+      Mesh(vertices: vertices, texcoords: texcoords, indices: indices, texture: texture);
   return mesh;
 }
 
