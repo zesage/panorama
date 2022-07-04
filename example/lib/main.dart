@@ -75,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (_panoId % panoImages.length) {
       case 0:
         panorama = Panorama(
+          useValueForProgress: true,
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
@@ -111,6 +112,7 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
       case 2:
         panorama = Panorama(
+          useValueForProgress: true,
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
@@ -131,6 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
       default:
         panorama = Panorama(
+          useValueForProgress: false,
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
