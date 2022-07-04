@@ -48,9 +48,7 @@ class Panorama extends StatefulWidget {
     this.onImageLoad,
     this.child,
     this.hotspots,
-    this.progressValueColor,
-    this.progressBackgroundColor,
-    required this.useValueForProgress,
+    this.progressBuilder,
   }) : super(key: key);
 
   /// The initial latitude, in degrees, between -90 and 90. default to 0 (the vertical center of the image).
@@ -131,10 +129,8 @@ class Panorama extends StatefulWidget {
   /// Specify an Image(equirectangular image) widget to the panorama.
   final Image? child;
 
-  final Color? progressValueColor;
-  final Color? progressBackgroundColor;
-
-  final bool useValueForProgress;
+  /// Builder to display custom progress indicators
+  final Widget Function(double)? progressBuilder;
 
   /// Place widgets in the panorama.
   final List<Hotspot>? hotspots;
@@ -484,14 +480,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
               child: pano,
             )
           : pano,
-      isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-              value: widget.useValueForProgress == true ? imageProgress : null,
-              color: widget.progressValueColor ?? Colors.blue,
-              backgroundColor: widget.progressBackgroundColor ?? Colors.white,
-            ))
-          : SizedBox(),
+      if (isLoading && widget.progressBuilder != null) widget.progressBuilder!(imageProgress)
     ]);
   }
 }
