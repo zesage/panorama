@@ -75,9 +75,10 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (_panoId % panoImages.length) {
       case 0:
         panorama = Panorama(
+          errorImage: Image.asset("assets/error.webp"),
           progressBuilder: (double progress) {
             return Center(
-              child: CircularProgressIndicator(value: progress, color: Colors.red, backgroundColor: Colors.white),
+              child: CircularProgressIndicator(value: progress, color: Colors.blue, backgroundColor: Colors.white),
             );
           },
           animSpeed: 1.0,
