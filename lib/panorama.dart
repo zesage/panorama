@@ -49,6 +49,7 @@ class Panorama extends StatefulWidget {
     this.child,
     this.hotspots,
     this.progressBuilder,
+    this.errorImage,
   }) : super(key: key);
 
   /// The initial latitude, in degrees, between -90 and 90. default to 0 (the vertical center of the image).
@@ -132,6 +133,9 @@ class Panorama extends StatefulWidget {
   /// Builder to display custom progress indicators
   final Widget Function(double)? progressBuilder;
 
+  /// Image to be displayed instead of child in case of image load error
+  final Image? errorImage;
+
   /// Place widgets in the panorama.
   final List<Hotspot>? hotspots;
 
@@ -160,6 +164,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   late StreamController<Null> _streamController;
   Stream<Null>? _stream;
   ImageStream? _imageStream;
+  ImageStream? _errorImageStream;
   bool isLoading = true;
   double imageProgress = 0;
 
@@ -301,9 +306,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   }
 
   void _updateTexture(ImageInfo imageInfo, bool synchronousCall) {
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
     surface?.mesh.texture = imageInfo.image;
     surface?.mesh.textureRect = Rect.fromLTWH(0, 0, imageInfo.image.width.toDouble(), imageInfo.image.height.toDouble());
     scene!.texture = imageInfo.image;
@@ -311,15 +314,23 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     widget.onImageLoad?.call();
   }
 
+  void _updateLoadProgress(ImageChunkEvent event) {
+    setState((() => imageProgress = (event.cumulativeBytesLoaded / event.expectedTotalBytes!)));
+  }
+
+  void _handleImageLoadError(object, stackTrace) {
+    if (widget.errorImage == null) return;
+    _errorImageStream?.removeListener(ImageStreamListener(_updateTexture));
+    _errorImageStream = widget.errorImage!.image.resolve(ImageConfiguration());
+    ImageStreamListener listener = ImageStreamListener(_updateTexture);
+    _errorImageStream!.addListener(listener);
+  }
+
   void _loadTexture(ImageProvider? provider) {
     if (provider == null) return;
-    _imageStream?.removeListener(ImageStreamListener(_updateTexture));
+    _imageStream?.removeListener(ImageStreamListener(_updateTexture, onChunk: _updateLoadProgress, onError: _handleImageLoadError));
     _imageStream = provider.resolve(ImageConfiguration());
-    ImageStreamListener listener = ImageStreamListener(_updateTexture, onChunk: ((event) {
-      setState(() {
-        imageProgress = (event.cumulativeBytesLoaded / event.expectedTotalBytes!);
-      });
-    }));
+    ImageStreamListener listener = ImageStreamListener(_updateTexture, onChunk: _updateLoadProgress, onError: _handleImageLoadError);
     _imageStream!.addListener(listener);
   }
 
@@ -421,7 +432,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
-    _imageStream?.removeListener(ImageStreamListener(_updateTexture));
+    _imageStream?.removeListener(ImageStreamListener(_updateTexture, onChunk: _updateLoadProgress, onError: _handleImageLoadError));
+    _errorImageStream?.removeListener(ImageStreamListener(_updateTexture));
     _orientationSubscription?.cancel();
     _screenOrientSubscription?.cancel();
     _controller.dispose();
