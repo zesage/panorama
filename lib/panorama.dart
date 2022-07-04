@@ -131,7 +131,7 @@ class Panorama extends StatefulWidget {
   final Image? child;
 
   /// Builder to display custom progress indicators
-  final Widget Function(double)? progressBuilder;
+  final Widget Function(double?)? progressBuilder;
 
   /// Image to be displayed instead of child in case of image load error
   final Image? errorImage;
@@ -166,7 +166,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   ImageStream? _imageStream;
   ImageStream? _errorImageStream;
   bool isLoading = true;
-  double imageProgress = 0;
+  double? imageProgress;
 
   void _handleTapUp(TapUpDetails details) {
     final Vector3 o = positionToLatLon(details.localPosition.dx, details.localPosition.dy);
