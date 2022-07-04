@@ -82,7 +82,8 @@ class _MyHomePageState extends State<MyHomePage> {
           onLongPressStart: (longitude, latitude, tilt) => print('onLongPressStart: $longitude, $latitude, $tilt'),
           onLongPressMoveUpdate: (longitude, latitude, tilt) => print('onLongPressMoveUpdate: $longitude, $latitude, $tilt'),
           onLongPressEnd: (longitude, latitude, tilt) => print('onLongPressEnd: $longitude, $latitude, $tilt'),
-          child: Image.asset('assets/panorama.jpg'),
+          child: Image.network(
+              'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Image_created_with_a_mobile_phone.png/800px-Image_created_with_a_mobile_phone.png'),
           hotspots: [
             Hotspot(
               latitude: -15.0,
