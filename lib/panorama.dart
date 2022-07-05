@@ -336,7 +336,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       setState(() {
         isLoading = false;
         hasError = true;
-        imageError = object.toString();
+        imageError = object;
       });
     }
   }
