@@ -81,6 +81,14 @@ class _MyHomePageState extends State<MyHomePage> {
               child: CircularProgressIndicator(value: progress, color: Colors.blue, backgroundColor: Colors.white),
             );
           },
+          errorBuilder: (String? error) {
+            return Center(
+              child: Text(
+                error ?? "",
+                textAlign: TextAlign.center,
+              ),
+            );
+          },
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
