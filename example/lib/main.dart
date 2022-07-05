@@ -81,10 +81,10 @@ class _MyHomePageState extends State<MyHomePage> {
               child: CircularProgressIndicator(value: progress, color: Colors.blue, backgroundColor: Colors.white),
             );
           },
-          errorBuilder: (String? error) {
+          errorBuilder: (Object? error) {
             return Center(
               child: Text(
-                error ?? "",
+                error.toString(),
                 textAlign: TextAlign.center,
               ),
             );

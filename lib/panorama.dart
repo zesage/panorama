@@ -136,7 +136,7 @@ class Panorama extends StatefulWidget {
   final Widget Function(double?)? progressBuilder;
 
   /// Builder to display widget up image load error
-  final Widget Function(String? error)? errorBuilder;
+  final Widget Function(Object error)? errorBuilder;
 
   /// Image to be displayed instead of child in case of image load error if no errorBuilder is provided
   /// Will be displayed in panorama
@@ -174,7 +174,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   bool isLoading = true;
   bool hasError = false;
   double? imageProgress;
-  String? imageError;
+  Object imageError = {};
 
   void _handleTapUp(TapUpDetails details) {
     final cube.Vector3 o = positionToLatLon(details.localPosition.dx, details.localPosition.dy);
