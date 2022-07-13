@@ -135,11 +135,10 @@ class Panorama extends StatefulWidget {
   /// Builder to display custom progress indicators
   final Widget Function(double?)? progressBuilder;
 
-  /// Builder to display widget up image load error
+  /// Builder to display widget in case of image load error. Takes priority over errorImage.
   final Widget Function(Object error)? errorBuilder;
 
-  /// Image to be displayed instead of child in case of image load error if no errorBuilder is provided
-  /// Will be displayed in panorama
+  /// Image to be displayed instead of child in case of image load error if no errorBuilder is provided. Will be displayed in panorama.
   final Image? errorImage;
 
   /// Place widgets in the panorama.
