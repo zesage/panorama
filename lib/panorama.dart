@@ -450,6 +450,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     _errorImageStream?.removeListener(ImageStreamListener(_updateTexture));
     _orientationSubscription?.cancel();
     _screenOrientSubscription?.cancel();
+    scene = null ;
     _controller.dispose();
     _streamController.close();
     super.dispose();
