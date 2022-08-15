@@ -75,6 +75,20 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (_panoId % panoImages.length) {
       case 0:
         panorama = Panorama(
+          //errorImage: Image.asset("assets/error.webp"),
+          progressBuilder: (double? progress) {
+            return Center(
+              child: CircularProgressIndicator(value: progress, color: Colors.blue, backgroundColor: Colors.white),
+            );
+          },
+          errorBuilder: (Object? error) {
+            return Center(
+              child: Text(
+                error.toString(),
+                textAlign: TextAlign.center,
+              ),
+            );
+          },
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
@@ -82,7 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
           onLongPressStart: (longitude, latitude, tilt) => print('onLongPressStart: $longitude, $latitude, $tilt'),
           onLongPressMoveUpdate: (longitude, latitude, tilt) => print('onLongPressMoveUpdate: $longitude, $latitude, $tilt'),
           onLongPressEnd: (longitude, latitude, tilt) => print('onLongPressEnd: $longitude, $latitude, $tilt'),
-          child: Image.asset('assets/panorama.jpg'),
+          child: Image.network(
+              'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Image_created_with_a_mobile_phone.png/800px-Image_created_with_a_mobile_phone.png'),
           hotspots: [
             Hotspot(
               latitude: -15.0,
