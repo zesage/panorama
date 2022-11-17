@@ -314,6 +314,9 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
     _imageStream!.addListener(listener);
   }
 
+  latitude = degrees(widget.latitude); // Fix Position
+  longitude = degrees(widget.longitude); // Fix Position
+  
   void _onSceneCreated(Scene scene) {
     this.scene = scene;
     scene.camera.near = 1.0;
@@ -333,6 +336,7 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   Matrix4 matrixFromLatLon(double lat, double lon) {
     return Matrix4.rotationY(radians(90.0 - lon))..rotateX(radians(lat));
   }
+  
 
   Vector3 positionToLatLon(double x, double y) {
     // transform viewport coordinate to NDC, values between -1 and 1
