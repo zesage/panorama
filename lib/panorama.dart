@@ -393,8 +393,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    latitude = degrees(widget.latitude);
-    longitude = degrees(widget.longitude);
+    latitude = radians(widget.latitude);
+    longitude = radians(widget.longitude);
     _streamController = StreamController<Null>.broadcast();
     _stream = _streamController.stream;
 
