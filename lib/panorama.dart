@@ -41,6 +41,7 @@ class Panorama extends StatefulWidget {
     this.croppedFullWidth = 1.0,
     this.croppedFullHeight = 1.0,
     this.onViewChanged,
+    this.onZoomChanged,
     this.onTap,
     this.onLongPressStart,
     this.onLongPressMoveUpdate,
@@ -109,6 +110,9 @@ class Panorama extends StatefulWidget {
 
   /// This event will be called when the view direction has changed, it contains latitude and longitude about the current view.
   final Function(double longitude, double latitude, double tilt)? onViewChanged;
+
+  /// This event will be called when the view zoom has changed, it contains zoom of the current view
+  final Function(double zoom)? onZoomChanged;
 
   /// This event will be called when the user has tapped, it contains latitude and longitude about where the user tapped.
   final Function(double longitude, double latitude, double tilt)? onTap;
@@ -198,6 +202,8 @@ class _PanoramaState extends State<Panorama> with SingleTickerProviderStateMixin
       } else
         _controller.forward();
     }
+    if (widget.onZoomChanged == null) return;
+    widget.onZoomChanged!(scene!.camera.zoom + zoomDelta * _dampingFactor);
   }
 
   void _updateView() {
