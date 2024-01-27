@@ -417,18 +417,22 @@ class _PanoramaState extends State<Panorama>
     final List<Widget> widgets = <Widget>[];
     if (hotspots != null && scene != null) {
       for (Hotspot hotspot in hotspots) {
+        final zoom = hotspot.zoomOnViewZoom ? _zoom : 1.0;
+        final hotspotHeight = hotspot.height * zoom;
+        final hotspotWidth = hotspot.width * zoom;
+
         final Vector3 pos =
             positionFromLatLon(hotspot.latitude, hotspot.longitude);
-        final Offset orgin = Offset(hotspot.width * hotspot.orgin.dx,
-            hotspot.height * hotspot.orgin.dy);
+        final Offset orgin = Offset(hotspotWidth * hotspot.orgin.dx,
+            hotspotHeight * hotspot.orgin.dy);
         final Matrix4 transform = scene!.camera.lookAtMatrix *
             matrixFromLatLon(hotspot.latitude, hotspot.longitude);
-        final zoom = hotspot.zoomOnViewZoom ? _zoom : 1.0;
+
         final Widget child = Positioned(
           left: pos.x - orgin.dx,
           top: pos.y - orgin.dy,
-          width: hotspot.width * zoom,
-          height: hotspot.height * zoom,
+          width: hotspotWidth,
+          height: hotspotHeight,
           child: Transform(
             origin: orgin,
             transform: transform..invert(),
