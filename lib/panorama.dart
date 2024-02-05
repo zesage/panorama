@@ -440,7 +440,7 @@ class _PanoramaState extends State<Panorama>
             transform: transform..invert(),
             child: Offstage(
               offstage: pos.z < 0,
-              child: hotspot.widget,
+              child: hotspot.builder(pos, hotspot.child),
             ),
           ),
         );
@@ -544,7 +544,8 @@ class Hotspot {
     this.height = 32.0,
     this.zoomOnViewZoom = false,
     this.onPositionChanged,
-    this.widget,
+    required this.builder,
+    this.child,
   });
 
   /// The name of this hotspot.
@@ -572,7 +573,10 @@ class Hotspot {
   // provides screen coordinates of hotspot
   final Function(double x, double y, double z)? onPositionChanged;
 
-  Widget? widget;
+  // provides screen position vector and child to build hotspot
+  final Widget Function(Vector3 position, Widget? child) builder;
+
+  Widget? child;
 }
 
 Mesh generateSphereMesh(
