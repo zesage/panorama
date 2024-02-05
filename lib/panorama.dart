@@ -423,10 +423,12 @@ class _PanoramaState extends State<Panorama>
 
         final Vector3 pos =
             positionFromLatLon(hotspot.latitude, hotspot.longitude);
-        final Offset orgin = Offset(hotspotWidth * hotspot.orgin.dx,
-            hotspotHeight * hotspot.orgin.dy);
+        final Offset orgin = Offset(
+            hotspotWidth * hotspot.orgin.dx, hotspotHeight * hotspot.orgin.dy);
         final Matrix4 transform = scene!.camera.lookAtMatrix *
             matrixFromLatLon(hotspot.latitude, hotspot.longitude);
+
+        hotspot.onPositionChanged?.call(pos.x, pos.y, pos.z);
 
         final Widget child = Positioned(
           left: pos.x - orgin.dx,
@@ -541,6 +543,7 @@ class Hotspot {
     this.width = 32.0,
     this.height = 32.0,
     this.zoomOnViewZoom = false,
+    this.onPositionChanged,
     this.widget,
   });
 
@@ -564,6 +567,10 @@ class Hotspot {
 
   // If true, hotspot size will be updated according to view zoom value.
   bool zoomOnViewZoom;
+
+  // is called when hotspot position is changed in screen
+  // provides screen coordinates of hotspot
+  final Function(double x, double y, double z)? onPositionChanged;
 
   Widget? widget;
 }
