@@ -24,6 +24,7 @@ class Panorama extends StatefulWidget {
     this.latitude = 0,
     this.longitude = 0,
     this.zoom = 1.0,
+    this.decreaseSensitivityOnZoom = false,
     this.minLatitude = -90.0,
     this.maxLatitude = 90.0,
     this.minLongitude = -180.0,
@@ -59,6 +60,9 @@ class Panorama extends StatefulWidget {
 
   /// The initial zoom, default to 1.0.
   final double zoom;
+
+  /// If true, sensitivity will increase and decrease according to zoom value
+  final bool decreaseSensitivityOnZoom;
 
   /// The minimal latitude to show. default to -90.0
   final double minLatitude;
@@ -197,12 +201,12 @@ class _PanoramaState extends State<Panorama>
   void _handleScaleUpdate(ScaleUpdateDetails details) {
     final offset = details.localFocalPoint - _lastFocalPoint;
     _lastFocalPoint = details.localFocalPoint;
-    latitudeDelta += widget.sensitivity *
+    latitudeDelta += _adaptingSensitivity *
         0.5 *
         math.pi *
         offset.dy /
         scene!.camera.viewportHeight;
-    longitudeDelta -= widget.sensitivity *
+    longitudeDelta -= _adaptingSensitivity *
         _animateDirection *
         0.5 *
         math.pi *
@@ -224,6 +228,12 @@ class _PanoramaState extends State<Panorama>
     widget.onZoomChanged!(_zoom);
   }
 
+  double get _adaptingSensitivity {
+    return widget.decreaseSensitivityOnZoom
+        ? widget.sensitivity / _zoom
+        : widget.sensitivity;
+  }
+
   double get _zoom {
     return scene!.camera.zoom + zoomDelta * _dampingFactor;
   }
@@ -233,14 +243,14 @@ class _PanoramaState extends State<Panorama>
     // auto rotate
     longitudeDelta += 0.001 * widget.animSpeed;
     // animate vertical rotating
-    latitude += latitudeDelta * _dampingFactor * widget.sensitivity;
-    latitudeDelta *= 1 - _dampingFactor * widget.sensitivity;
+    latitude += latitudeDelta * _dampingFactor * _adaptingSensitivity;
+    latitudeDelta *= 1 - _dampingFactor * _adaptingSensitivity;
     // animate horizontal rotating
     longitude += _animateDirection *
         longitudeDelta *
         _dampingFactor *
-        widget.sensitivity;
-    longitudeDelta *= 1 - _dampingFactor * widget.sensitivity;
+        _adaptingSensitivity;
+    longitudeDelta *= 1 - _dampingFactor * _adaptingSensitivity;
     // animate zomming
     final double zoom = scene!.camera.zoom + zoomDelta * _dampingFactor;
     zoomDelta *= 1 - _dampingFactor;
@@ -429,6 +439,7 @@ class _PanoramaState extends State<Panorama>
             matrixFromLatLon(hotspot.latitude, hotspot.longitude);
 
         hotspot.onPositionChanged?.call(pos.x, pos.y, pos.z);
+        assert(hotspot.builder != null || hotspot.child != null);
 
         final Widget child = Positioned(
           left: pos.x - orgin.dx,
