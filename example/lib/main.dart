@@ -96,9 +96,6 @@ class _MyHomePageState extends State<MyHomePage> {
               longitude: -129.0,
               width: 90,
               height: 75,
-              builder: (position, child) {
-                return child!;
-              },
               child: hotspotButton(
                   text: "Next scene",
                   icon: Icons.open_in_browser,
@@ -122,9 +119,6 @@ class _MyHomePageState extends State<MyHomePage> {
               longitude: -46.0,
               width: 90.0,
               height: 75.0,
-              builder: (position, child) {
-                return child!;
-              },
               child: hotspotButton(
                   text: "Next scene",
                   icon: Icons.double_arrow,
@@ -145,9 +139,6 @@ class _MyHomePageState extends State<MyHomePage> {
               longitude: 160.0,
               width: 90.0,
               height: 75.0,
-              builder: (position, child) {
-                return child!;
-              },
               child: hotspotButton(
                   text: "Next scene",
                   icon: Icons.double_arrow,
