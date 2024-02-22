@@ -37,6 +37,7 @@ class Panorama extends StatefulWidget {
     this.latSegments = 32,
     this.lonSegments = 64,
     this.interactive = true,
+    this.updateLatLngOnWidgetUpdate = false,
     this.sensorControl = SensorControl.None,
     this.croppedArea = const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0),
     this.croppedFullWidth = 1.0,
@@ -99,6 +100,9 @@ class Panorama extends StatefulWidget {
 
   /// Interact with the panorama. default to true
   final bool interactive;
+
+  /// Update Latitude and Longitude if widget is updated.
+  final bool updateLatLngOnWidgetUpdate;
 
   /// Control the panorama with motion sensors.
   final SensorControl sensorControl;
@@ -463,11 +467,15 @@ class _PanoramaState extends State<Panorama>
     return Stack(children: widgets);
   }
 
+  void _updateLatLng() {
+    latitude = radians(widget.latitude);
+    longitude = radians(widget.longitude);
+  }
+
   @override
   void initState() {
     super.initState();
-    latitude = radians(widget.latitude);
-    longitude = radians(widget.longitude);
+    _updateLatLng();
     _streamController = StreamController<Null>.broadcast();
     _stream = _streamController.stream;
 
@@ -512,6 +520,10 @@ class _PanoramaState extends State<Panorama>
     }
     if (widget.sensorControl != oldWidget.sensorControl) {
       _updateSensorControl();
+    }
+    if (widget.updateLatLngOnWidgetUpdate) {
+      _updateLatLng();
+      _updateView();
     }
   }
 
