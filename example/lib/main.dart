@@ -45,7 +45,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget hotspotButton({String? text, IconData? icon, VoidCallback? onPressed}) {
+  Widget hotspotButton(
+      {String? text, IconData? icon, VoidCallback? onPressed}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -61,7 +62,9 @@ class _MyHomePageState extends State<MyHomePage> {
         text != null
             ? Container(
                 padding: EdgeInsets.all(4.0),
-                decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.all(Radius.circular(4))),
+                decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.all(Radius.circular(4))),
                 child: Center(child: Text(text)),
               )
             : Container(),
@@ -78,10 +81,14 @@ class _MyHomePageState extends State<MyHomePage> {
           animSpeed: 1.0,
           sensorControl: SensorControl.Orientation,
           onViewChanged: onViewChanged,
-          onTap: (longitude, latitude, tilt) => print('onTap: $longitude, $latitude, $tilt'),
-          onLongPressStart: (longitude, latitude, tilt) => print('onLongPressStart: $longitude, $latitude, $tilt'),
-          onLongPressMoveUpdate: (longitude, latitude, tilt) => print('onLongPressMoveUpdate: $longitude, $latitude, $tilt'),
-          onLongPressEnd: (longitude, latitude, tilt) => print('onLongPressEnd: $longitude, $latitude, $tilt'),
+          onTap: (longitude, latitude, tilt) =>
+              print('onTap: $longitude, $latitude, $tilt'),
+          onLongPressStart: (longitude, latitude, tilt) =>
+              print('onLongPressStart: $longitude, $latitude, $tilt'),
+          onLongPressMoveUpdate: (longitude, latitude, tilt) =>
+              print('onLongPressMoveUpdate: $longitude, $latitude, $tilt'),
+          onLongPressEnd: (longitude, latitude, tilt) =>
+              print('onLongPressEnd: $longitude, $latitude, $tilt'),
           child: Image.asset('assets/panorama.jpg'),
           hotspots: [
             Hotspot(
@@ -89,21 +96,10 @@ class _MyHomePageState extends State<MyHomePage> {
               longitude: -129.0,
               width: 90,
               height: 75,
-              widget: hotspotButton(text: "Next scene", icon: Icons.open_in_browser, onPressed: () => setState(() => _panoId++)),
-            ),
-            Hotspot(
-              latitude: -42.0,
-              longitude: -46.0,
-              width: 60.0,
-              height: 60.0,
-              widget: hotspotButton(icon: Icons.search, onPressed: () => setState(() => _panoId = 2)),
-            ),
-            Hotspot(
-              latitude: -33.0,
-              longitude: 123.0,
-              width: 60.0,
-              height: 60.0,
-              widget: hotspotButton(icon: Icons.arrow_upward, onPressed: () {}),
+              child: hotspotButton(
+                  text: "Next scene",
+                  icon: Icons.open_in_browser,
+                  onPressed: () => setState(() => _panoId++)),
             ),
           ],
         );
@@ -123,7 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
               longitude: -46.0,
               width: 90.0,
               height: 75.0,
-              widget: hotspotButton(text: "Next scene", icon: Icons.double_arrow, onPressed: () => setState(() => _panoId++)),
+              child: hotspotButton(
+                  text: "Next scene",
+                  icon: Icons.double_arrow,
+                  onPressed: () => setState(() => _panoId++)),
             ),
           ],
         );
@@ -140,7 +139,10 @@ class _MyHomePageState extends State<MyHomePage> {
               longitude: 160.0,
               width: 90.0,
               height: 75.0,
-              widget: hotspotButton(text: "Next scene", icon: Icons.double_arrow, onPressed: () => setState(() => _panoId++)),
+              child: hotspotButton(
+                  text: "Next scene",
+                  icon: Icons.double_arrow,
+                  onPressed: () => setState(() => _panoId++)),
             ),
           ],
         );
@@ -152,7 +154,8 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Stack(
         children: [
           panorama,
-          Text('${_lon.toStringAsFixed(3)}, ${_lat.toStringAsFixed(3)}, ${_tilt.toStringAsFixed(3)}'),
+          Text(
+              '${_lon.toStringAsFixed(3)}, ${_lat.toStringAsFixed(3)}, ${_tilt.toStringAsFixed(3)}'),
         ],
       ),
       floatingActionButton: FloatingActionButton(
